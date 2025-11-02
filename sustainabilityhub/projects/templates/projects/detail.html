@@ -26,14 +26,68 @@
         {{ project.description|linebreaks }}
     </div>
     
-    {% if user == project.creator %}
-        <a href="{% url 'projects:update' pk=project.pk %}" class="btn">Edit</a>
-        <a href="{% url 'projects:delete' pk=project.pk %}" class="btn btn-danger">Delete</a>
-    {% endif %}
-    {% if user.is_authenticated and user != project.creator %}
-        <a href="{% url 'projects:join' pk=project.pk %}" class="btn">
-            {% if user in project.members.all %}Leave Project{% else %}Join Project{% endif %}
-        </a>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+        {% if user == project.creator or user in project.members.all %}
+            <a href="{% url 'projects:chat' pk=project.pk %}" class="btn" style="background: linear-gradient(135deg, #17a2b8, #138496);">
+                💬 Project Chat
+            </a>
+        {% endif %}
+        
+        {% if user == project.creator %}
+            <a href="{% url 'projects:update' pk=project.pk %}" class="btn">Edit Project</a>
+            <a href="{% url 'projects:manage_requests' pk=project.pk %}" class="btn">
+                Manage Requests
+                {% if pending_requests %}
+                    <span style="background: var(--accent-2); color: var(--bg-900); padding: 0.2rem 0.5rem; border-radius: 10px; margin-left: 0.5rem; font-size: 0.85rem;">{{ pending_requests.count }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'projects:delete' pk=project.pk %}" class="btn btn-danger">Delete</a>
+        {% elif user.is_authenticated %}
+            {% if user in project.members.all %}
+                <span style="padding: 0.65rem 1.25rem; background: rgba(45,134,89,0.2); color: var(--accent-2); border-radius: 12px; font-weight: 600;">✓ You're a member</span>
+            {% elif pending_request %}
+                <span style="padding: 0.65rem 1.25rem; background: rgba(23,162,184,0.2); color: #bfe9ff; border-radius: 12px; font-weight: 600;">⏳ Request pending...</span>
+            {% else %}
+                <form method="post" action="{% url 'projects:request_join' pk=project.pk %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn">Request to Join</button>
+                </form>
+            {% endif %}
+        {% endif %}
+    </div>
+    
+    {% if user == project.creator and pending_requests %}
+        <div style="margin-top: 2rem; padding: 1rem; background: rgba(23,162,184,0.1); border-radius: 12px; border: 1px solid rgba(23,162,184,0.3);">
+            <h3 style="color: #bfe9ff; margin-bottom: 1rem;">Pending Join Requests ({{ pending_requests.count }})</h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for req in pending_requests|slice:":3" %}
+                    <div style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                            <div>
+                                <a href="{% url 'profiles:detail' username=req.user.username %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600;">{{ req.user.username }}</a>
+                                <span style="color: var(--muted); font-size: 0.9rem; display: block; margin-top: 0.25rem;">{{ req.created_at|timesince }} ago</span>
+                                {% if req.message %}
+                                    <p style="color: var(--muted); margin-top: 0.5rem; font-size: 0.9rem;">{{ req.message }}</p>
+                                {% endif %}
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <form method="post" action="{% url 'projects:approve_request' pk=req.pk %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Approve</button>
+                                </form>
+                                <form method="post" action="{% url 'projects:reject_request' pk=req.pk %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Reject</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                {% if pending_requests.count > 3 %}
+                    <a href="{% url 'projects:manage_requests' pk=project.pk %}" class="btn btn-secondary" style="margin-top: 0.5rem;">View All Requests</a>
+                {% endif %}
+            </div>
+        </div>
     {% endif %}
     
     <div style="margin-top: 1rem;">

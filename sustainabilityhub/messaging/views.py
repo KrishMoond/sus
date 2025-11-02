@@ -61,18 +61,48 @@ class MessageCreateView(LoginRequiredMixin, CreateView):
 def start_conversation(request, user_id):
     from django.contrib.auth import get_user_model
     
+    if not request.user.is_authenticated:
+        messages.error(request, 'You must be logged in to send messages.')
+        return redirect('login')
+    
     User = get_user_model()
     other_user = get_object_or_404(User, pk=user_id)
     
-    if request.user.is_authenticated and request.user != other_user:
-        # Find existing conversation or create new one
-        conversations = Conversation.objects.filter(participants=request.user)
-        conversation = conversations.filter(participants=other_user).distinct().first()
-        
-        if not conversation:
-            conversation = Conversation.objects.create()
-            conversation.participants.add(request.user, other_user)
-        
-        return redirect('messaging:conversation_detail', pk=conversation.pk)
+    if request.user == other_user:
+        messages.error(request, 'You cannot message yourself.')
+        return redirect('profiles:detail', username=other_user.username)
     
-    return redirect('profiles:detail', username=other_user.username)
+    # Find existing conversation or create new one
+    conversations = Conversation.objects.filter(participants=request.user)
+    conversation = conversations.filter(participants=other_user).distinct().first()
+    
+    if not conversation:
+        conversation = Conversation.objects.create()
+        conversation.participants.add(request.user, other_user)
+        messages.success(request, f'Started conversation with {other_user.username}.')
+    
+    return redirect('messaging:conversation_detail', pk=conversation.pk)
+
+
+class FindUsersView(LoginRequiredMixin, ListView):
+    """View to find and message any user in the community"""
+    from django.contrib.auth import get_user_model
+    
+    template_name = 'messaging/find_users.html'
+    context_object_name = 'users'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        User = get_user_model()
+        queryset = User.objects.exclude(id=self.request.user.id).select_related('profile')
+        
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(username__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search)
+            )
+        
+        return queryset.order_by('username')

@@ -12,16 +12,16 @@
         {% endfor %}
     </h1>
     
-    <div style="max-height: 500px; overflow-y: auto; margin-bottom: 1rem; padding: 1rem; background-color: #f9f9f9; border-radius: 4px;">
+    <div style="max-height: 500px; overflow-y: auto; margin-bottom: 1rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 12px;">
         {% for message in message_list %}
             <div style="margin-bottom: 1rem; {% if message.sender == user %}text-align: right;{% endif %}">
-                <p><strong>{{ message.sender.username }}</strong> - {{ message.created_at|date:"M d, Y g:i A" }}</p>
-                <p style="display: inline-block; padding: 0.5rem 1rem; background-color: {% if message.sender == user %}#2d8659{% else %}white{% endif %}; color: {% if message.sender == user %}white{% else %}black{% endif %}; border-radius: 8px;">
+                <p style="color: var(--muted);"><strong style="color: var(--accent-2);">{{ message.sender.username }}</strong> - {{ message.created_at|date:"M d, Y g:i A" }}</p>
+                <p style="display: inline-block; padding: 0.5rem 1rem; background: {% if message.sender == user %}rgba(45,134,89,0.2){% else %}rgba(255,255,255,0.05){% endif %}; color: rgba(255,255,255,0.9); border-radius: 8px;">
                     {{ message.content|linebreaks }}
                 </p>
             </div>
         {% empty %}
-            <p>No messages yet. Start the conversation!</p>
+            <p style="color: var(--muted);">No messages yet. Start the conversation!</p>
         {% endfor %}
     </div>
     

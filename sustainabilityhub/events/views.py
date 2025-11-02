@@ -4,6 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django import forms
 from .models import Event
 
 
@@ -33,6 +34,12 @@ class EventCreateView(LoginRequiredMixin, CreateView):
     fields = ['title', 'description', 'event_type', 'location', 'start_date', 'end_date', 
               'max_participants', 'image', 'is_online', 'online_link']
     
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['start_date'].widget = forms.DateInput(attrs={'type': 'date'})
+        form.fields['end_date'].widget = forms.DateInput(attrs={'type': 'date'})
+        return form
+    
     def form_valid(self, form):
         form.instance.organizer = self.request.user
         return super().form_valid(form)
@@ -46,6 +53,12 @@ class EventUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'events/form.html'
     fields = ['title', 'description', 'event_type', 'location', 'start_date', 'end_date', 
               'max_participants', 'image', 'is_online', 'online_link']
+    
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['start_date'].widget = forms.DateInput(attrs={'type': 'date'})
+        form.fields['end_date'].widget = forms.DateInput(attrs={'type': 'date'})
+        return form
     
     def get_queryset(self):
         return Event.objects.filter(organizer=self.request.user)

@@ -4,6 +4,10 @@ from django.conf import settings
 from django.conf.urls.static import static
 from forums.views import home_view
 
+# Customize admin site
+admin.site.site_header = "Sustainability Hub Administration"
+admin.site.site_title = "Admin Portal"
+admin.site.index_title = "Welcome to Sustainability Hub Admin"
 
 urlpatterns = [
     path('admin/', admin.site.urls),

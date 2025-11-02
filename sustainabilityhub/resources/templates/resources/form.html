@@ -3,22 +3,101 @@
 {% block title %}{% if object %}Edit{% else %}Add{% endif %} Resource{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h1>{% if object %}Edit{% else %}Add{% endif %} Resource</h1>
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h1 style="color: var(--accent-2); margin-bottom: 2rem;">
+        {% if object %}✏️ Edit Resource{% else %}➕ Add New Resource{% endif %}
+    </h1>
+    
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        {% for field in form %}
+        
+        {% if form.non_field_errors %}
+            <div style="padding: 1rem; background: rgba(220,53,69,0.2); color: #ffb3b3; border-radius: 12px; margin-bottom: 1.5rem; border-left: 4px solid #dc3545;">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="{{ form.title.id_for_label }}">Resource Title:</label>
+            {{ form.title }}
+            {% if form.title.errors %}
+                <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.title.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}">Description:</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.description.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div class="form-group">
-                <label>{{ field.label }}:</label>
-                {{ field }}
-                {% if field.errors %}
-                    <div style="color: #dc3545;">{{ field.errors }}</div>
+                <label for="{{ form.resource_type.id_for_label }}">Resource Type:</label>
+                {{ form.resource_type }}
+                {% if form.resource_type.errors %}
+                    <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.resource_type.errors }}</div>
                 {% endif %}
             </div>
-        {% endfor %}
-        <button type="submit" class="btn">Save</button>
-        <a href="{% if object %}{% url 'resources:detail' pk=object.pk %}{% else %}{% url 'resources:list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+            
+            <div class="form-group">
+                <label for="{{ form.category.id_for_label }}">Category:</label>
+                {{ form.category }}
+                {% if form.category.errors %}
+                    <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.category.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.url.id_for_label }}">URL (optional):</label>
+            {{ form.url }}
+            {% if form.url.errors %}
+                <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.url.errors }}</div>
+            {% endif %}
+            <small style="color: var(--muted); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Link to the resource if available</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.image.id_for_label }}">Image (optional):</label>
+            {% if object and object.image %}
+                <div style="margin-bottom: 0.75rem;">
+                    <img src="{{ object.image.url }}" alt="Current image" style="width: 200px; height: 150px; object-fit: cover; border-radius: 12px; border: 2px solid var(--accent);">
+                </div>
+            {% endif %}
+            {{ form.image }}
+            {% if form.image.errors %}
+                <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.image.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.tags.id_for_label }}">Tags (comma-separated, optional):</label>
+            {{ form.tags }}
+            {% if form.tags.errors %}
+                <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.tags.errors }}</div>
+            {% endif %}
+            <small style="color: var(--muted); font-size: 0.85rem; display: block; margin-top: 0.5rem;">e.g., sustainability, recycling, energy</small>
+        </div>
+        
+        {% if user.is_superuser %}
+        <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                {{ form.is_featured }}
+                <span>Feature this resource</span>
+            </label>
+            {% if form.is_featured.errors %}
+                <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.is_featured.errors }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn" style="padding: 0.85rem 2rem;">{% if object %}Update Resource{% else %}Add Resource{% endif %}</button>
+            <a href="{% if object %}{% url 'resources:detail' pk=object.pk %}{% else %}{% url 'resources:list' %}{% endif %}" class="btn btn-secondary" style="padding: 0.85rem 2rem;">Cancel</a>
+        </div>
     </form>
 </div>
 {% endblock %}
-

@@ -1,103 +1,394 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Home - Sustainability Hub{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Hero Section Animation */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    .hero-section {
+        animation: fadeInUp 0.8s ease-out;
+        text-align: center;
+        padding: 4rem 2rem;
+        background: linear-gradient(135deg, rgba(45,134,89,0.15), rgba(35,139,78,0.1));
+        border: 1px solid rgba(45,134,89,0.2);
+        border-radius: 20px;
+        margin-bottom: 3rem;
+    }
+    
+    .stat-card {
+        animation: fadeInUp 0.6s ease-out;
+        animation-fill-mode: both;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+    
+    .stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 40px rgba(45,134,89,0.3);
+    }
+    
+    .feature-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: 0 14px 48px rgba(0,0,0,0.5);
+    }
+    
+    .counter {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--accent-2);
+        display: inline-block;
+    }
+    
+    .trending-item {
+        animation: fadeInUp 0.5s ease-out;
+        animation-fill-mode: both;
+    }
+    
+    .trending-item:nth-child(1) { animation-delay: 0.1s; }
+    .trending-item:nth-child(2) { animation-delay: 0.2s; }
+    .trending-item:nth-child(3) { animation-delay: 0.3s; }
+    
+    @media (prefers-reduced-motion: reduce) {
+        .hero-section,
+        .stat-card,
+        .feature-card,
+        .trending-item {
+            animation: none;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card">
-    <h1>Welcome to Sustainability Hub</h1>
-    <p>Connect, collaborate, and make a difference for our planet.</p>
+<!-- Hero Section -->
+<div class="hero-section">
+    <h1 style="font-size: 3.5rem; margin: 0 0 1rem 0; color: var(--accent-2); font-weight: 800; text-shadow: 0 4px 20px rgba(45,134,89,0.3);">
+        🌱 Welcome to Sustainability Hub
+    </h1>
+    <p style="font-size: 1.4rem; color: rgba(255,255,255,0.9); margin: 0 0 2rem 0; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+        Connect, collaborate, and make a difference for our planet. Join thousands of activists working together for a sustainable future.
+    </p>
+    {% if not user.is_authenticated %}
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{% url 'register' %}" class="btn" style="padding: 1rem 2.5rem; font-size: 1.1rem; animation: pulse 2s infinite;">Get Started Free</a>
+            <a href="{% url 'login' %}" class="btn btn-secondary" style="padding: 1rem 2.5rem; font-size: 1.1rem;">Login</a>
+        </div>
+    {% endif %}
 </div>
 
-<div class="grid">
-    <div class="card">
-        <h2>🌿 Forums</h2>
-        <p>Join discussions about sustainability, share ideas, and learn from others.</p>
-        <a href="{% url 'forums:topics' %}" class="btn">Browse Forums</a>
-        {% if user.is_authenticated %}
-            <a href="{% url 'forums:topic_create' %}" class="btn btn-secondary">Start Discussion</a>
-        {% endif %}
+<!-- Statistics Section -->
+<div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin: 3rem 0;">
+    <div class="card stat-card" style="text-align: center; padding: 2rem;">
+        <div class="counter" data-count="{{ stats.total_projects }}">0</div>
+        <div style="color: var(--muted); font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem;">Active Projects</div>
+    </div>
+    <div class="card stat-card" style="text-align: center; padding: 2rem;">
+        <div class="counter" data-count="{{ stats.total_topics }}">0</div>
+        <div style="color: var(--muted); font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem;">Forum Discussions</div>
+    </div>
+    <div class="card stat-card" style="text-align: center; padding: 2rem;">
+        <div class="counter" data-count="{{ stats.total_events }}">0</div>
+        <div style="color: var(--muted); font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem;">Events Organized</div>
+    </div>
+    <div class="card stat-card" style="text-align: center; padding: 2rem;">
+        <div class="counter" data-count="{{ stats.total_resources }}">0</div>
+        <div style="color: var(--muted); font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem;">Resources Shared</div>
+    </div>
+</div>
+
+<!-- Main Features Grid -->
+<div class="grid" style="margin: 3rem 0;">
+    <div class="card feature-card" style="position: relative; overflow: hidden;">
+        <div style="font-size: 4rem; margin-bottom: 1rem; animation: float 3s ease-in-out infinite;">🌿</div>
+        <h2 style="margin: 0 0 1rem 0; color: var(--accent-2); font-size: 1.8rem;">Forums</h2>
+        <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem; line-height: 1.7;">
+            Join discussions about sustainability, share ideas, and learn from others in our vibrant community.
+        </p>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{% url 'forums:topics' %}" class="btn">Browse Forums</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'forums:topic_create' %}" class="btn btn-secondary">Start Discussion</a>
+            {% endif %}
+        </div>
     </div>
     
-    <div class="card">
-        <h2>🚀 Projects</h2>
-        <p>Collaborate on sustainability projects and track progress together.</p>
-        <a href="{% url 'projects:list' %}" class="btn">View Projects</a>
-        {% if user.is_authenticated %}
-            <a href="{% url 'projects:create' %}" class="btn btn-secondary">Create Project</a>
-        {% endif %}
+    <div class="card feature-card" style="position: relative; overflow: hidden;">
+        <div style="font-size: 4rem; margin-bottom: 1rem; animation: float 3s ease-in-out infinite; animation-delay: 0.5s;">🚀</div>
+        <h2 style="margin: 0 0 1rem 0; color: var(--accent-2); font-size: 1.8rem;">Projects</h2>
+        <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem; line-height: 1.7;">
+            Collaborate on sustainability projects, track progress, and make real-world impact together.
+        </p>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{% url 'projects:list' %}" class="btn">View Projects</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'projects:create' %}" class="btn btn-secondary">Create Project</a>
+            {% endif %}
+        </div>
     </div>
     
-    <div class="card">
-        <h2>📅 Events</h2>
-        <p>Discover and participate in sustainability events in your area.</p>
-        <a href="{% url 'events:list' %}" class="btn">Find Events</a>
-        {% if user.is_authenticated %}
-            <a href="{% url 'events:create' %}" class="btn btn-secondary">Organize Event</a>
-        {% endif %}
+    <div class="card feature-card" style="position: relative; overflow: hidden;">
+        <div style="font-size: 4rem; margin-bottom: 1rem; animation: float 3s ease-in-out infinite; animation-delay: 1s;">📅</div>
+        <h2 style="margin: 0 0 1rem 0; color: var(--accent-2); font-size: 1.8rem;">Events</h2>
+        <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem; line-height: 1.7;">
+            Discover and participate in sustainability events in your area. Connect with like-minded people.
+        </p>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{% url 'events:list' %}" class="btn">Find Events</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'events:create' %}" class="btn btn-secondary">Organize Event</a>
+            {% endif %}
+        </div>
     </div>
     
-    <div class="card">
-        <h2>📚 Resources</h2>
-        <p>Access valuable resources, articles, and tools for sustainable living.</p>
-        <a href="{% url 'resources:list' %}" class="btn">Browse Resources</a>
-        {% if user.is_authenticated %}
-            <a href="{% url 'resources:create' %}" class="btn btn-secondary">Share Resource</a>
-        {% endif %}
+    <div class="card feature-card" style="position: relative; overflow: hidden;">
+        <div style="font-size: 4rem; margin-bottom: 1rem; animation: float 3s ease-in-out infinite; animation-delay: 1.5s;">📚</div>
+        <h2 style="margin: 0 0 1rem 0; color: var(--accent-2); font-size: 1.8rem;">Resources</h2>
+        <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem; line-height: 1.7;">
+            Access valuable resources, articles, and tools for sustainable living and environmental action.
+        </p>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{% url 'resources:list' %}" class="btn">Browse Resources</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'resources:create' %}" class="btn btn-secondary">Share Resource</a>
+            {% endif %}
+        </div>
     </div>
 </div>
 
 {% if user.is_authenticated %}
-    <div class="card">
-        <h2>Quick Actions</h2>
-        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <a href="{% url 'forums:topic_create' %}" class="btn">Start a Discussion</a>
-            <a href="{% url 'projects:create' %}" class="btn">Create a Project</a>
-            <a href="{% url 'events:create' %}" class="btn">Organize an Event</a>
-            <a href="{% url 'resources:create' %}" class="btn">Share a Resource</a>
-            <a href="{% url 'profiles:detail' username=user.username %}" class="btn btn-secondary">My Profile</a>
-            <a href="{% url 'notifications:list' %}" class="btn btn-secondary">
-                Notifications{% if unread_notifications_count > 0 %} ({{ unread_notifications_count }}){% endif %}
-            </a>
+    <!-- Quick Actions Section -->
+    <div class="card" style="margin: 3rem 0;">
+        <h2 style="margin-bottom: 1.5rem; color: var(--accent-2); display: flex; align-items: center; gap: 0.5rem;">
+            ⚡ Quick Actions
+        </h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <a href="{% url 'forums:topic_create' %}" class="btn" style="padding: 1rem; text-align: center;">💬 Start Discussion</a>
+            <a href="{% url 'projects:create' %}" class="btn" style="padding: 1rem; text-align: center;">🚀 Create Project</a>
+            <a href="{% url 'events:create' %}" class="btn" style="padding: 1rem; text-align: center;">📅 Organize Event</a>
+            <a href="{% url 'resources:create' %}" class="btn" style="padding: 1rem; text-align: center;">📚 Share Resource</a>
         </div>
     </div>
     
-    <div class="card">
-        <h2>Your Activity</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-            <div>
-                <h3>Your Projects</h3>
-                <ul>
-                    {% for project in user.created_projects.all|slice:":5" %}
-                        <li><a href="{% url 'projects:detail' pk=project.pk %}">{{ project.title }}</a></li>
-                    {% empty %}
-                        <li>No projects yet</li>
-                    {% endfor %}
-                </ul>
-                {% if user.created_projects.count > 5 %}
-                    <a href="{% url 'projects:list' %}" class="btn btn-secondary">View All</a>
-                {% endif %}
+    <!-- User Statistics -->
+    {% if user_stats %}
+    <div class="card" style="margin: 3rem 0;">
+        <h2 style="margin-bottom: 1.5rem; color: var(--accent-2);">Your Impact</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem;">
+            <div style="text-align: center; padding: 1.5rem; background: rgba(45,134,89,0.1); border-radius: 12px;">
+                <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-2);">{{ user_stats.projects_created }}</div>
+                <div style="color: var(--muted); margin-top: 0.5rem;">Projects Created</div>
             </div>
-            <div>
-                <h3>Upcoming Events</h3>
-                <ul>
-                    {% for event in user.attending_events.all|slice:":5" %}
-                        {% if event.is_upcoming %}
-                            <li><a href="{% url 'events:detail' pk=event.pk %}">{{ event.title }}</a></li>
-                        {% endif %}
-                    {% empty %}
-                        <li>No upcoming events</li>
-                    {% endfor %}
-                </ul>
-                <a href="{% url 'events:list' %}" class="btn btn-secondary">View All</a>
+            <div style="text-align: center; padding: 1.5rem; background: rgba(45,134,89,0.1); border-radius: 12px;">
+                <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-2);">{{ user_stats.projects_joined }}</div>
+                <div style="color: var(--muted); margin-top: 0.5rem;">Projects Joined</div>
+            </div>
+            <div style="text-align: center; padding: 1.5rem; background: rgba(45,134,89,0.1); border-radius: 12px;">
+                <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-2);">{{ user_stats.topics_started }}</div>
+                <div style="color: var(--muted); margin-top: 0.5rem;">Discussions Started</div>
             </div>
         </div>
     </div>
-{% else %}
-    <div class="card">
-        <h2>Get Started</h2>
-        <p>Join our community to start making a difference!</p>
-        <a href="{% url 'register' %}" class="btn">Create Account</a>
-        <a href="{% url 'login' %}" class="btn btn-secondary">Login</a>
-    </div>
+    {% endif %}
 {% endif %}
+
+<!-- Recent Content Sections - Only for authenticated users -->
+{% if user.is_authenticated %}
+    {% if recent_projects or recent_topics or upcoming_events %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin: 3rem 0;">
+        {% if recent_projects %}
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem; color: var(--accent-2); display: flex; align-items: center; gap: 0.5rem;">
+                🚀 Recent Projects
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for project in recent_projects %}
+                    <div class="trending-item" style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 3px solid var(--accent); transition: transform 0.2s;">
+                        <a href="{% url 'projects:detail' pk=project.pk %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600; display: block; margin-bottom: 0.5rem;">{{ project.title }}</a>
+                        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.5rem 0;">by <a href="{% url 'profiles:detail' username=project.creator.username %}" style="color: var(--accent-2);">{{ project.creator.username }}</a></p>
+                        <span style="color: var(--muted); font-size: 0.85rem;">{{ project.created_at|timesince }} ago</span>
+                    </div>
+                {% endfor %}
+                <a href="{% url 'projects:list' %}" class="btn btn-secondary" style="margin-top: 0.5rem;">View All Projects →</a>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if recent_topics %}
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem; color: var(--accent-2); display: flex; align-items: center; gap: 0.5rem;">
+                💬 Trending Discussions
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for topic in recent_topics %}
+                    <div class="trending-item" style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 3px solid var(--accent); transition: transform 0.2s;">
+                        <a href="{% url 'forums:topic_detail' pk=topic.pk %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600; display: block; margin-bottom: 0.5rem;">{{ topic.title }}</a>
+                        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.5rem 0;">
+                            by <a href="{% url 'profiles:detail' username=topic.author.username %}" style="color: var(--accent-2);">{{ topic.author.username }}</a>
+                            {% if topic.post_count %} • {{ topic.post_count }} replies{% endif %}
+                        </p>
+                        <span style="color: var(--muted); font-size: 0.85rem;">{{ topic.created_at|timesince }} ago</span>
+                    </div>
+                {% endfor %}
+                <a href="{% url 'forums:topics' %}" class="btn btn-secondary" style="margin-top: 0.5rem;">View All Discussions →</a>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if upcoming_events %}
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem; color: var(--accent-2); display: flex; align-items: center; gap: 0.5rem;">
+                📅 Upcoming Events
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for event in upcoming_events %}
+                    <div class="trending-item" style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 3px solid var(--accent); transition: transform 0.2s;">
+                        <a href="{% url 'events:detail' pk=event.pk %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600; display: block; margin-bottom: 0.5rem;">{{ event.title }}</a>
+                        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.5rem 0;">
+                            📍 {{ event.location }} • {{ event.start_date|date:"M d, Y" }}
+                        </p>
+                        <span style="color: var(--muted); font-size: 0.85rem;">{{ event.start_date|timesince }} from now</span>
+                    </div>
+                {% endfor %}
+                <a href="{% url 'events:list' %}" class="btn btn-secondary" style="margin-top: 0.5rem;">View All Events →</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+{% endif %}
+
+{% if not user.is_authenticated %}
+<!-- About Us & Mission for Guests -->
+<div class="card" style="margin: 3rem 0; padding: 3rem 2rem; text-align: center;">
+    <h2 style="color: var(--accent-2); margin-bottom: 1.5rem; font-size: 2.5rem;">🌍 Who We Are</h2>
+    <p style="color: rgba(255,255,255,0.9); font-size: 1.3rem; line-height: 1.8; max-width: 800px; margin: 0 auto 2rem auto;">
+        Sustainability Hub is a vibrant community platform dedicated to environmental action and sustainable living. 
+        We bring together passionate individuals, organizations, and activists who are committed to making a positive impact on our planet.
+    </p>
+</div>
+
+<div class="card" style="margin: 3rem 0; padding: 3rem 2rem;">
+    <h2 style="color: var(--accent-2); margin-bottom: 2rem; font-size: 2.2rem; text-align: center;">🎯 Our Mission</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; max-width: 1000px; margin: 0 auto;">
+        <div style="text-align: center; padding: 2rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🤝</div>
+            <h3 style="color: var(--accent-2); margin-bottom: 0.75rem;">Connect</h3>
+            <p style="color: var(--muted); line-height: 1.6;">Bring together like-minded individuals passionate about sustainability and environmental conservation.</p>
+        </div>
+        <div style="text-align: center; padding: 2rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🚀</div>
+            <h3 style="color: var(--accent-2); margin-bottom: 0.75rem;">Collaborate</h3>
+            <p style="color: var(--muted); line-height: 1.6;">Enable partnerships and teamwork on meaningful sustainability projects that create real-world impact.</p>
+        </div>
+        <div style="text-align: center; padding: 2rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📚</div>
+            <h3 style="color: var(--accent-2); margin-bottom: 0.75rem;">Educate</h3>
+            <p style="color: var(--muted); line-height: 1.6;">Share knowledge, resources, and best practices to empower sustainable living and environmental action.</p>
+        </div>
+        <div style="text-align: center; padding: 2rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🌱</div>
+            <h3 style="color: var(--accent-2); margin-bottom: 0.75rem;">Transform</h3>
+            <p style="color: var(--muted); line-height: 1.6;">Drive positive change through collective action, innovative projects, and sustainable solutions.</p>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="text-align: center; padding: 3rem 2rem; margin: 3rem 0; background: linear-gradient(135deg, rgba(45,134,89,0.15), rgba(35,139,78,0.1)); border: 1px solid rgba(45,134,89,0.2);">
+    <h2 style="color: var(--accent-2); margin-bottom: 1rem; font-size: 2rem;">Ready to Make a Difference?</h2>
+    <p style="color: rgba(255,255,255,0.9); font-size: 1.2rem; margin-bottom: 2rem; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+        Join thousands of sustainability activists, environmentalists, and changemakers working together to build a better, more sustainable future. 
+        Create your free account today and start making an impact!
+    </p>
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="{% url 'register' %}" class="btn" style="padding: 1rem 2.5rem; font-size: 1.1rem;">Create Free Account</a>
+        <a href="{% url 'login' %}" class="btn btn-secondary" style="padding: 1rem 2.5rem; font-size: 1.1rem;">Already a Member? Login</a>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    // Animated Counter
+    function animateCounter(element) {
+        const target = parseInt(element.getAttribute('data-count'));
+        const duration = 2000;
+        const step = target / (duration / 16);
+        let current = 0;
+        
+        const timer = setInterval(() => {
+            current += step;
+            if (current >= target) {
+                element.textContent = target;
+                clearInterval(timer);
+            } else {
+                element.textContent = Math.floor(current);
+            }
+        }, 16);
+    }
+    
+    // Intersection Observer for animations
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const counter = entry.target.querySelector('.counter');
+                if (counter && !counter.classList.contains('animated')) {
+                    counter.classList.add('animated');
+                    animateCounter(counter);
+                }
+                entry.target.style.opacity = '1';
+            }
+        });
+    }, observerOptions);
+    
+    // Observe stat cards
+    document.querySelectorAll('.stat-card').forEach(card => {
+        observer.observe(card);
+    });
+    
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+</script>
 {% endblock %}

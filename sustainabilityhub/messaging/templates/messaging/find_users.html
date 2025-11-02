@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Find Users to Message{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="color: var(--accent-2); margin-bottom: 1rem;">👥 Find Users to Message</h1>
+    <p style="color: var(--muted); margin-bottom: 2rem;">Connect with community members for collaborations</p>
+    
+    <form method="get" style="margin-bottom: 2rem;">
+        <div style="display: flex; gap: 1rem; align-items: flex-end;">
+            <div class="form-group" style="flex: 1; margin: 0;">
+                <label for="search">Search users:</label>
+                <input type="text" name="search" id="search" placeholder="Enter username or name..." value="{{ request.GET.search }}" style="width: 100%;">
+            </div>
+            <button type="submit" class="btn">Search</button>
+            <a href="{% url 'messaging:find_users' %}" class="btn btn-secondary">Clear</a>
+        </div>
+    </form>
+    
+    {% if users %}
+        <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+            {% for user in users %}
+                <div class="card" style="padding: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        {% if user.avatar %}
+                            <img src="{{ user.avatar.url }}" alt="{{ user.username }}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
+                        {% else %}
+                            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.5rem; border: 2px solid var(--accent);">
+                                {{ user.username|first|upper }}
+                            </div>
+                        {% endif %}
+                        <div>
+                            <h3 style="margin: 0; color: var(--accent-2);">
+                                <a href="{% url 'profiles:detail' username=user.username %}" style="color: inherit; text-decoration: none;">{{ user.username }}</a>
+                            </h3>
+                            {% if user.get_full_name %}
+                                <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">{{ user.get_full_name }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if user.bio %}
+                        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.5rem 0; line-height: 1.5;">{{ user.bio|truncatewords:20 }}</p>
+                    {% endif %}
+                    
+                    <a href="{% url 'messaging:start_conversation' user_id=user.id %}" class="btn" style="width: 100%; margin-top: 1rem;">💬 Send Message</a>
+                </div>
+            {% endfor %}
+        </div>
+        
+        {% if is_paginated %}
+            <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 2rem;">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="btn btn-secondary">First</a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="btn btn-secondary">Previous</a>
+                {% endif %}
+                
+                <span style="padding: 0.75rem 1rem; color: var(--muted);">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="btn btn-secondary">Next</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="btn btn-secondary">Last</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% elif request.GET.search %}
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <p style="color: var(--muted); font-size: 1.2rem;">No users found matching "{{ request.GET.search }}"</p>
+            <a href="{% url 'messaging:find_users' %}" class="btn" style="margin-top: 1rem;">View All Users</a>
+        </div>
+    {% else %}
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <p style="color: var(--muted); font-size: 1.2rem;">Search for users above to find people to message</p>
+        </div>
+    {% endif %}
+    
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'messaging:conversations' %}" class="btn btn-secondary">← Back to Conversations</a>
+    </div>
+</div>
+{% endblock %}
+

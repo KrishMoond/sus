@@ -4,23 +4,65 @@
 
 {% block content %}
 <div class="card">
-    <h1>Edit Profile</h1>
+    <h1 style="margin-bottom: 2rem; color: var(--accent-2);">Edit Profile</h1>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <div class="form-group">
-            <label>Location:</label>
-            {{ form.location }}
+        
+        <div style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 12px;">
+            <h2 style="margin-bottom: 1rem; color: var(--accent-2);">Personal Information</h2>
+            
+            <div class="form-group">
+                <label for="{{ user_form.avatar.id_for_label }}">Avatar:</label>
+                {% if user.avatar %}
+                    <div style="margin-bottom: 0.75rem;">
+                        <img src="{{ user.avatar.url }}" alt="Current avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
+                    </div>
+                {% endif %}
+                {{ user_form.avatar }}
+                <small style="color: var(--muted); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Upload a profile picture</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ user_form.bio.id_for_label }}">Bio:</label>
+                {{ user_form.bio }}
+                {% if user_form.bio.errors %}
+                    <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ user_form.bio.errors }}</div>
+                {% endif %}
+            </div>
         </div>
-        <div class="form-group">
-            <label>Skills:</label>
-            {{ form.skills }}
+        
+        <div style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 12px;">
+            <h2 style="margin-bottom: 1rem; color: var(--accent-2);">Profile Details</h2>
+            
+            <div class="form-group">
+                <label for="{{ form.location.id_for_label }}">Location:</label>
+                {{ form.location }}
+                {% if form.location.errors %}
+                    <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.location.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.skills.id_for_label }}">Skills:</label>
+                {{ form.skills }}
+                {% if form.skills.errors %}
+                    <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.skills.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.interests_input.id_for_label }}">Interests (comma-separated):</label>
+                {{ form.interests_input }}
+                {% if form.interests_input.errors %}
+                    <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.interests_input.errors }}</div>
+                {% endif %}
+            </div>
         </div>
-        <div class="form-group">
-            <label>Interests (comma-separated):</label>
-            {{ form.interests_input }}
+        
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn">Save Changes</button>
+            <a href="{% url 'profiles:detail' username=user.username %}" class="btn btn-secondary">Cancel</a>
         </div>
-        <button type="submit" class="btn">Save Changes</button>
-        <a href="{% url 'profiles:detail' username=user.username %}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
 {% endblock %}

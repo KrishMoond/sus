@@ -16,10 +16,16 @@
         <button type="submit" class="btn">Search</button>
     </form>
     
-    <div style="margin-bottom: 1rem;">
-        <a href="{% url 'forums:topics' %}" class="btn btn-secondary">All Topics</a>
+    <div style="margin-bottom: 1rem; display:flex; flex-wrap:wrap; gap:0.5rem;">
+        <a href="{% url 'forums:topics' %}" 
+           class="btn btn-secondary {% if not request.GET.category %}active{% endif %}">
+           All Topics
+        </a>
         {% for category in categories %}
-            <a href="?category={{ category.id }}" class="btn btn-secondary">{{ category.name }}</a>
+            <a href="?category={{ category.id }}" 
+               class="btn btn-secondary {% if request.GET.category == category.id|stringformat:'s' %}active{% endif %}">
+               {{ category.name }}
+            </a>
         {% endfor %}
     </div>
     
@@ -41,7 +47,11 @@
                         {% if topic.is_pinned %}📌 {% endif %}
                         <a href="{% url 'forums:topic_detail' pk=topic.pk %}">{{ topic.title }}</a>
                     </td>
-                    <td style="padding: 0.5rem;"><a href="{% url 'profiles:detail' username=topic.author.username %}">{{ topic.author.username }}</a></td>
+                    <td style="padding: 0.5rem;">
+                        <a href="{% url 'profiles:detail' username=topic.author.username %}">
+                            {{ topic.author.username }}
+                        </a>
+                    </td>
                     <td style="padding: 0.5rem;">{{ topic.category.name|default:"Uncategorized" }}</td>
                     <td style="padding: 0.5rem;">{{ topic.post_count }}</td>
                     <td style="padding: 0.5rem;">{{ topic.views }}</td>
@@ -55,5 +65,11 @@
         </tbody>
     </table>
 </div>
-{% endblock %}
 
+<style>
+.btn.active {
+    background-color: #2d8659 !important;
+    color: white !important;
+}
+</style>
+{% endblock %}

@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
-    CategoryListView, TopicListView, TopicDetailView,
+    CategoryListView, CategoryCreateView, CategoryUpdateView, CategoryDeleteView,
+    TopicListView, TopicDetailView,
     TopicCreateView, TopicUpdateView, TopicDeleteView,
     PostCreateView, PostUpdateView, PostDeleteView,
     like_topic
@@ -10,6 +11,9 @@ app_name = 'forums'
 
 urlpatterns = [
     path('categories/', CategoryListView.as_view(), name='categories'),
+    path('categories/create/', CategoryCreateView.as_view(), name='category_create'),
+    path('categories/<int:pk>/edit/', CategoryUpdateView.as_view(), name='category_update'),
+    path('categories/<int:pk>/delete/', CategoryDeleteView.as_view(), name='category_delete'),
     path('topics/', TopicListView.as_view(), name='topics'),
     path('topics/<int:pk>/', TopicDetailView.as_view(), name='topic_detail'),
     path('topics/create/', TopicCreateView.as_view(), name='topic_create'),

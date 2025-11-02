@@ -1,5 +1,8 @@
 from django import forms
 from .models import Profile
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class ProfileForm(forms.ModelForm):
@@ -28,3 +31,21 @@ class ProfileForm(forms.ModelForm):
         if commit:
             profile.save()
         return profile
+
+
+class UserForm(forms.ModelForm):
+    """Form for editing User model fields (bio, avatar)"""
+    
+    class Meta:
+        model = User
+        fields = ['bio', 'avatar']
+        widgets = {
+            'bio': forms.Textarea(attrs={
+                'rows': 4,
+                'placeholder': 'Tell us about yourself...',
+                'style': 'resize: vertical;'
+            }),
+            'avatar': forms.FileInput(attrs={
+                'accept': 'image/*'
+            })
+        }

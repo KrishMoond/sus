@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Forum Categories{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1 style="color: var(--accent-2); margin: 0;">🌿 Forum Categories</h1>
+    {% if user.is_superuser %}
+        <a href="{% url 'forums:category_create' %}" class="btn">➕ Create Category</a>
+    {% endif %}
+</div>
+
+<div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+    {% for category in categories %}
+        <div class="card" style="padding: 1.5rem;">
+            <h3 style="color: var(--accent-2); margin-bottom: 0.5rem;">
+                <a href="{% url 'forums:topics' %}?category={{ category.id }}" style="color: inherit; text-decoration: none;">{{ category.name }}</a>
+            </h3>
+            {% if category.description %}
+                <p style="color: var(--muted); margin: 0.5rem 0; line-height: 1.6;">{{ category.description }}</p>
+            {% endif %}
+            <p style="color: var(--muted); font-size: 0.9rem; margin-top: 1rem;">
+                {{ category.topics.count }} topic{{ category.topics.count|pluralize }}
+            </p>
+            {% if user.is_superuser %}
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <a href="{% url 'forums:category_update' pk=category.pk %}" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Edit</a>
+                    <a href="{% url 'forums:category_delete' pk=category.pk %}" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Delete</a>
+                </div>
+            {% endif %}
+        </div>
+    {% empty %}
+        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+            <p style="color: var(--muted); font-size: 1.2rem;">No categories yet.</p>
+            {% if user.is_superuser %}
+                <a href="{% url 'forums:category_create' %}" class="btn" style="margin-top: 1rem;">Create First Category</a>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+
+<a href="{% url 'forums:topics' %}" class="btn btn-secondary" style="margin-top: 2rem;">← Back to Topics</a>
+{% endblock %}
+

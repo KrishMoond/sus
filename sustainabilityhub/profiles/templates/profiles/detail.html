@@ -3,40 +3,102 @@
 {% block title %}{{ profile.user.username }} - Profile{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h1>{{ profile.user.username }}</h1>
-    {% if profile.user.avatar %}
-        <img src="{{ profile.user.avatar.url }}" alt="{{ profile.user.username }}" style="width: 150px; height: 150px; border-radius: 50%; margin: 1rem 0;">
-    {% endif %}
-    {% if profile.user.bio %}
-        <p><strong>Bio:</strong> {{ profile.user.bio }}</p>
-    {% endif %}
-    {% if profile.location %}
-        <p><strong>Location:</strong> {{ profile.location }}</p>
-    {% endif %}
-    {% if profile.skills %}
-        <p><strong>Skills:</strong> {{ profile.skills }}</p>
-    {% endif %}
-    {% if profile.interests %}
-        <p><strong>Interests:</strong> {{ profile.interests|join:", " }}</p>
-    {% endif %}
+<div class="card" style="position: relative; overflow: hidden;">
+    <div style="display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap;">
+        <div style="flex-shrink: 0;">
+            {% if profile.user.avatar %}
+                <img src="{{ profile.user.avatar.url }}" alt="{{ profile.user.username }}" 
+                     style="width: 180px; height: 180px; border-radius: 50%; object-fit: cover; border: 4px solid var(--accent); box-shadow: 0 8px 24px rgba(45,134,89,0.3);">
+            {% else %}
+                <div style="width: 180px; height: 180px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-size: 4rem; border: 4px solid var(--accent); box-shadow: 0 8px 24px rgba(45,134,89,0.3);">
+                    {{ profile.user.username|first|upper }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div style="flex: 1; min-width: 250px;">
+            <h1 style="margin: 0 0 0.5rem 0; color: var(--accent-2); font-size: 2rem;">{{ profile.user.username }}</h1>
+            {% if profile.user.get_full_name %}
+                <p style="color: var(--muted); margin-bottom: 1rem; font-size: 1.1rem;">{{ profile.user.get_full_name }}</p>
+            {% endif %}
+            
+            {% if profile.user.bio %}
+                <div style="margin: 1.5rem 0; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 3px solid var(--accent);">
+                    <p style="margin: 0; line-height: 1.6; color: rgba(255,255,255,0.9);">{{ profile.user.bio|linebreaks }}</p>
+                </div>
+            {% endif %}
+            
+                   <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem;">
+                       {% if user == profile.user %}
+                           <a href="{% url 'profiles:edit' %}" class="btn">⚙️ Edit Profile</a>
+                       {% elif user.is_authenticated %}
+                           <a href="{% url 'messaging:start_conversation' user_id=profile.user.id %}" class="btn" style="background: linear-gradient(135deg, #17a2b8, #138496);">💬 Send Message</a>
+                       {% endif %}
+                   </div>
+        </div>
+    </div>
     
-    {% if user == profile.user %}
-        <a href="{% url 'profiles:edit' %}" class="btn">Edit Profile</a>
-    {% elif user.is_authenticated %}
-        <a href="{% url 'messaging:start_conversation' user_id=profile.user.id %}" class="btn">Send Message</a>
-    {% endif %}
+    <div style="margin-top: 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1);">
+        {% if profile.location %}
+        <div>
+            <strong style="color: var(--accent-2); display: block; margin-bottom: 0.5rem;">📍 Location</strong>
+            <span style="color: var(--muted);">{{ profile.location }}</span>
+        </div>
+        {% endif %}
+        
+        {% if profile.skills %}
+        <div>
+            <strong style="color: var(--accent-2); display: block; margin-bottom: 0.5rem;">🛠️ Skills</strong>
+            <span style="color: var(--muted);">{{ profile.skills }}</span>
+        </div>
+        {% endif %}
+        
+        {% if profile.interests %}
+        <div>
+            <strong style="color: var(--accent-2); display: block; margin-bottom: 0.5rem;">🌟 Interests</strong>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                {% for interest in profile.interests %}
+                    <span style="background: rgba(45,134,89,0.2); color: var(--accent-2); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">{{ interest }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
 </div>
 
 <div class="card">
-    <h2>Projects</h2>
-    <ul>
-        {% for project in profile.user.created_projects.all %}
-            <li><a href="{% url 'projects:detail' pk=project.pk %}">{{ project.title }}</a></li>
-        {% empty %}
-            <li>No projects yet.</li>
-        {% endfor %}
-    </ul>
+    <h2 style="margin-bottom: 1.5rem; color: var(--accent-2);">Statistics</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem;">
+        <div style="text-align: center; padding: 1rem; background: rgba(45,134,89,0.1); border-radius: 12px;">
+            <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-2);">{{ user_stats.projects_created }}</div>
+            <div style="color: var(--muted); margin-top: 0.5rem;">Projects Created</div>
+        </div>
+        <div style="text-align: center; padding: 1rem; background: rgba(45,134,89,0.1); border-radius: 12px;">
+            <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-2);">{{ user_stats.projects_joined }}</div>
+            <div style="color: var(--muted); margin-top: 0.5rem;">Projects Joined</div>
+        </div>
+        <div style="text-align: center; padding: 1rem; background: rgba(45,134,89,0.1); border-radius: 12px;">
+            <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-2);">{{ user_stats.events_attending }}</div>
+            <div style="color: var(--muted); margin-top: 0.5rem;">Events Attending</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 style="margin-bottom: 1.5rem; color: var(--accent-2);">Created Projects</h2>
+    {% if profile.user.created_projects.all %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+            {% for project in profile.user.created_projects.all %}
+                <div style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); transition: transform 0.2s;">
+                    <a href="{% url 'projects:detail' pk=project.pk %}" style="text-decoration: none; color: var(--accent-2); font-weight: 600;">{{ project.title }}</a>
+                    <p style="color: var(--muted); font-size: 0.9rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">{{ project.get_status_display }}</p>
+                    <span style="color: var(--muted); font-size: 0.85rem;">{{ project.created_at|date:"M Y" }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="color: var(--muted);">No projects yet.</p>
+    {% endif %}
 </div>
 {% endblock %}
 
