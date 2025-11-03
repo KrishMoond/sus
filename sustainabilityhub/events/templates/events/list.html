@@ -4,28 +4,130 @@
 
 {% block content %}
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h1>Events</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem;">
+        <h1 style="color: var(--accent-2); margin: 0;">🎆 Events & Meetups</h1>
         {% if user.is_authenticated %}
-            <a href="{% url 'events:create' %}" class="btn">Create Event</a>
+            <a href="{% url 'events:create' %}" class="btn">➕ Create Event</a>
         {% endif %}
     </div>
     
-    <div class="grid">
+    <!-- Search and Filters -->
+    <form method="get" style="margin-bottom: 2rem;">
+        <div style="display: grid; grid-template-columns: 1fr auto auto auto; gap: 1rem; align-items: end;">
+            <div class="form-group" style="margin: 0;">
+                <label for="search">Search events:</label>
+                <input type="text" name="search" id="search" placeholder="Search by title, description, or location..." value="{{ request.GET.search }}" style="width: 100%;">
+            </div>
+            
+            <div class="form-group" style="margin: 0;">
+                <label for="type">Type:</label>
+                <select name="type" id="type">
+                    <option value="">All Types</option>
+                    <option value="workshop" {% if request.GET.type == 'workshop' %}selected{% endif %}>Workshop</option>
+                    <option value="conference" {% if request.GET.type == 'conference' %}selected{% endif %}>Conference</option>
+                    <option value="meetup" {% if request.GET.type == 'meetup' %}selected{% endif %}>Meetup</option>
+                    <option value="webinar" {% if request.GET.type == 'webinar' %}selected{% endif %}>Webinar</option>
+                    <option value="volunteer" {% if request.GET.type == 'volunteer' %}selected{% endif %}>Volunteer</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin: 0;">
+                <label for="time">When:</label>
+                <select name="time" id="time">
+                    <option value="upcoming" {% if request.GET.time != 'past' %}selected{% endif %}>Upcoming</option>
+                    <option value="past" {% if request.GET.time == 'past' %}selected{% endif %}>Past Events</option>
+                    <option value="all" {% if request.GET.time == 'all' %}selected{% endif %}>All Events</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn">Filter</button>
+        </div>
+        
+        {% if request.GET.search or request.GET.type or request.GET.time == 'past' %}
+            <div style="margin-top: 1rem;">
+                <a href="{% url 'events:list' %}" class="btn btn-secondary">Clear Filters</a>
+            </div>
+        {% endif %}
+    </form>
+    
+    {% if request.GET.search %}
+        <p style="color: var(--muted); margin-bottom: 1.5rem;">Showing results for "{{ request.GET.search }}"</p>
+    {% endif %}
+    
+    <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
         {% for event in events %}
-            <div class="card">
+            <div class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
                 {% if event.image %}
-                    <img src="{{ event.image.url }}" alt="{{ event.title }}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 4px; margin-bottom: 1rem;">
+                    <img src="{{ event.image.url }}" alt="{{ event.title }}" style="width: 100%; height: 200px; object-fit: cover;">
+                {% else %}
+                    <div style="width: 100%; height: 200px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-size: 3rem;">
+                        {% if event.event_type == 'workshop' %}🛠️
+                        {% elif event.event_type == 'conference' %}🎤
+                        {% elif event.event_type == 'meetup' %}🤝
+                        {% elif event.event_type == 'webinar' %}💻
+                        {% elif event.event_type == 'volunteer' %}🤲
+                        {% else %}🎆{% endif %}
+                    </div>
                 {% endif %}
-                <h3><a href="{% url 'events:detail' pk=event.pk %}">{{ event.title }}</a></h3>
-                <p>{{ event.description|truncatewords:20 }}</p>
-                <p><strong>Type:</strong> {{ event.get_event_type_display }}</p>
-                <p><strong>Date:</strong> {{ event.start_date|date:"F d, Y g:i A" }}</p>
-                <p><strong>Location:</strong> {{ event.location }}</p>
-                <p><strong>Participants:</strong> {{ event.participant_count }}{% if event.max_participants %}/{{ event.max_participants }}{% endif %}</p>
+                
+                <div style="padding: 1.5rem; flex: 1; display: flex; flex-direction: column;">
+                    <!-- Event Type Badge -->
+                    <div style="margin-bottom: 1rem;">
+                        <span style="background: rgba(45,134,89,0.2); color: var(--accent-2); padding: 0.3rem 0.6rem; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">
+                            {{ event.get_event_type_display }}
+                        </span>
+                        {% if event.is_online %}
+                            <span style="background: rgba(23,162,184,0.2); color: #bfe9ff; padding: 0.3rem 0.6rem; border-radius: 12px; font-size: 0.8rem; margin-left: 0.5rem;">🌐 Online</span>
+                        {% endif %}
+                    </div>
+                    
+                    <h3 style="color: var(--accent-2); margin-bottom: 0.75rem; line-height: 1.3;">
+                        <a href="{% url 'events:detail' pk=event.pk %}" style="color: inherit; text-decoration: none;">{{ event.title }}</a>
+                    </h3>
+                    
+                    <p style="color: var(--muted); margin-bottom: 1.5rem; line-height: 1.5; flex: 1;">{{ event.description|truncatewords:25 }}</p>
+                    
+                    <!-- Event Details -->
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.9rem; margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--muted);">
+                            <span>🗺</span>
+                            <span>{{ event.start_date|date:"M d, Y" }} at {{ event.start_date|date:"g:i A" }}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--muted);">
+                            <span>📍</span>
+                            <span>{{ event.location|truncatechars:30 }}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--muted);">
+                            <span>👥</span>
+                            <span>{{ event.participant_count }}{% if event.max_participants %}/{{ event.max_participants }}{% endif %} attending</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 0.75rem; margin-top: auto;">
+                        <a href="{% url 'events:detail' pk=event.pk %}" class="btn" style="flex: 1; text-align: center; padding: 0.6rem;">View Details</a>
+                        {% if user.is_authenticated and user != event.organizer and event.start_date > now %}
+                            <a href="{% url 'events:register' pk=event.pk %}" class="btn btn-secondary" style="padding: 0.6rem;">
+                                {% if user in event.participants.all %}✓{% else %}➕{% endif %}
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         {% empty %}
-            <p>No events scheduled yet.</p>
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                {% if request.GET.search %}
+                    <p style="color: var(--muted); font-size: 1.2rem;">No events found for "{{ request.GET.search }}"</p>
+                    <a href="{% url 'events:list' %}" class="btn" style="margin-top: 1rem;">View All Events</a>
+                {% else %}
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">🎆</div>
+                    <p style="color: var(--muted); font-size: 1.2rem; margin-bottom: 0.5rem;">No events scheduled yet</p>
+                    <p style="color: var(--muted);">Be the first to organize a community event!</p>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'events:create' %}" class="btn" style="margin-top: 1rem;">Create First Event</a>
+                    {% endif %}
+                {% endif %}
+            </div>
         {% endfor %}
     </div>
 </div>

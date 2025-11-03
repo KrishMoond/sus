@@ -14,6 +14,24 @@ class ProjectListView(ListView):
     template_name = 'projects/list.html'
     context_object_name = 'projects'
     paginate_by = 12
+    
+    def get_queryset(self):
+        queryset = Project.objects.all()
+        
+        # Search functionality
+        search = self.request.GET.get('search')
+        if search:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(title__icontains=search) | Q(description__icontains=search) | Q(tags__icontains=search)
+            )
+        
+        # Filter by status
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+            
+        return queryset.order_by('-created_at')
 
 
 class ProjectDetailView(DetailView):
@@ -252,11 +270,25 @@ class ProjectUpdateCreateView(LoginRequiredMixin, CreateView):
     template_name = 'projects/update_form.html'
     fields = ['content']
     
+    def dispatch(self, request, *args, **kwargs):
+        project = get_object_or_404(Project, pk=self.kwargs['pk'])
+        # Check if user is creator or member
+        if request.user != project.creator and request.user not in project.members.all():
+            messages.error(request, 'You must be a project member to add updates.')
+            return redirect('projects:detail', pk=project.pk)
+        return super().dispatch(request, *args, **kwargs)
+    
     def form_valid(self, form):
         project = get_object_or_404(Project, pk=self.kwargs['pk'])
         form.instance.project = project
         form.instance.author = self.request.user
+        messages.success(self.request, 'Project update added successfully!')
         return super().form_valid(form)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['project'] = get_object_or_404(Project, pk=self.kwargs['pk'])
+        return context
     
     def get_success_url(self):
         return reverse_lazy('projects:detail', kwargs={'pk': self.kwargs['pk']})

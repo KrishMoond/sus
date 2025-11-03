@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ target_user.username }} Warnings{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="color: var(--accent-2);">⚠️ Warnings for {{ target_user.username }}</h1>
+    
+    {% for warning in warnings %}
+        <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div>
+                    <h3 style="color: var(--accent-2);">{{ warning.reason }}</h3>
+                    <p style="color: var(--muted); margin: 0.5rem 0;">
+                        <strong>Issued by:</strong> {{ warning.issued_by.username }} | 
+                        <strong>Date:</strong> {{ warning.created_at|date:"M d, Y g:i A" }}
+                    </p>
+                </div>
+                {% if warning.severity == 'low' %}
+                    <span class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: #28a745;">{{ warning.get_severity_display }}</span>
+                {% elif warning.severity == 'medium' %}
+                    <span class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: #ffc107; color: #000;">{{ warning.get_severity_display }}</span>
+                {% elif warning.severity == 'high' %}
+                    <span class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: #fd7e14;">{{ warning.get_severity_display }}</span>
+                {% else %}
+                    <span class="btn btn-danger" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">{{ warning.get_severity_display }}</span>
+                {% endif %}
+            </div>
+            <p style="margin: 1rem 0;">{{ warning.description }}</p>
+        </div>
+    {% empty %}
+        <p style="text-align: center; color: var(--muted);">No warnings issued to this user.</p>
+    {% endfor %}
+    
+    <a href="{% url 'accounts:admin_users' %}" class="btn btn-secondary">Back to Users</a>
+</div>
+{% endblock %}

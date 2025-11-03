@@ -4,50 +4,117 @@
 
 {% block content %}
 <div class="card">
-    <h1>{{ topic.title }}</h1>
-    <p><strong>Author:</strong> <a href="{% url 'profiles:detail' username=topic.author.username %}">{{ topic.author.username }}</a></p>
-    <p><strong>Category:</strong> {{ topic.category.name|default:"Uncategorized" }}</p>
-    <p><strong>Created:</strong> {{ topic.created_at|date:"F d, Y g:i A" }}</p>
-    <p><strong>Views:</strong> {{ topic.views }}</p>
+    <!-- Topic Header -->
+    <div style="display: flex; align-items: start; gap: 1rem; margin-bottom: 2rem;">
+        <div style="flex-shrink: 0;">
+            {% if topic.author.avatar %}
+                <img src="{{ topic.author.avatar.url }}" alt="{{ topic.author.username }}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent);">
+            {% else %}
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.5rem; border: 3px solid var(--accent);">
+                    {{ topic.author.username|first|upper }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                {% if topic.is_pinned %}
+                    <span style="background: #ffc107; color: #000; padding: 0.3rem 0.6rem; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">📌 Pinned</span>
+                {% endif %}
+                {% if topic.category %}
+                    <span style="background: rgba(45,134,89,0.2); color: var(--accent-2); padding: 0.3rem 0.6rem; border-radius: 12px; font-size: 0.8rem;">{{ topic.category.name }}</span>
+                {% endif %}
+            </div>
+            
+            <h1 style="color: var(--accent-2); margin: 0 0 1rem 0; font-size: 1.8rem;">{{ topic.title }}</h1>
+            
+            <div style="display: flex; align-items: center; gap: 2rem; font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-bottom: 1rem;">
+                <span>👤 <a href="{% url 'profiles:detail' username=topic.author.username %}" style="color: var(--accent-2); text-decoration: none;">{{ topic.author.username }}</a></span>
+                <span>🕰 {{ topic.created_at|date:"F d, Y g:i A" }}</span>
+                <span>👁 {{ topic.views }} views</span>
+            </div>
+        </div>
+    </div>
     
-    <div style="margin: 1.5rem 0; padding: 1rem; background-color: #f9f9f9; border-radius: 4px;">
+    <!-- Topic Content -->
+    <div style="margin: 2rem 0; padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 4px solid var(--accent);">
         {{ topic.content|linebreaks }}
     </div>
     
-    {% if user == topic.author %}
-        <a href="{% url 'forums:topic_update' pk=topic.pk %}" class="btn">Edit</a>
-        <a href="{% url 'forums:topic_delete' pk=topic.pk %}" class="btn btn-danger">Delete</a>
-    {% endif %}
-    {% if user.is_authenticated %}
-        <a href="{% url 'forums:topic_like' pk=topic.pk %}" class="btn">
-            Like ({{ topic.likes.count }})
-        </a>
-        {% if user != topic.author %}
-            <a href="{% url 'messaging:start_conversation' user_id=topic.author.id %}" class="btn btn-secondary">Message Author</a>
+    <!-- Action Buttons -->
+    <div style="display: flex; align-items: center; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+        {% if user.is_authenticated %}
+            <a href="{% url 'forums:topic_like' pk=topic.pk %}" class="btn" style="display: flex; align-items: center; gap: 0.5rem;">
+                ❤️ Like ({{ topic.likes.count }})
+            </a>
+            {% if user != topic.author %}
+                <a href="{% url 'messaging:start_conversation' user_id=topic.author.id %}" class="btn btn-secondary">💬 Message Author</a>
+            {% endif %}
         {% endif %}
-    {% endif %}
+        
+        {% if user == topic.author %}
+            <a href="{% url 'forums:topic_update' pk=topic.pk %}" class="btn" style="margin-left: auto;">✏️ Edit</a>
+            <a href="{% url 'forums:topic_delete' pk=topic.pk %}" class="btn btn-danger">🗑️ Delete</a>
+        {% endif %}
+    </div>
 </div>
 
 <div class="card">
-    <h2>Replies</h2>
-    {% if user.is_authenticated and not topic.is_locked %}
-        <a href="{% url 'forums:post_create' topic_pk=topic.pk %}" class="btn">Reply</a>
-    {% endif %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="color: var(--accent-2); margin: 0;">💬 Replies ({{ posts.count }})</h2>
+        {% if user.is_authenticated and not topic.is_locked %}
+            <a href="{% url 'forums:post_create' topic_pk=topic.pk %}" class="btn">➕ Reply</a>
+        {% endif %}
+    </div>
     
     {% for post in posts %}
-        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ddd;">
-            <p><strong><a href="{% url 'profiles:detail' username=post.author.username %}">{{ post.author.username }}</a></strong> - {{ post.created_at|date:"F d, Y g:i A" }}</p>
-            {% if post.is_edited %}
-                <small style="color: #666;">(edited)</small>
-            {% endif %}
-            <p>{{ post.content|linebreaks }}</p>
-            {% if user == post.author %}
-                <a href="{% url 'forums:post_update' pk=post.pk %}" class="btn" style="font-size: 0.9rem;">Edit</a>
-                <a href="{% url 'forums:post_delete' pk=post.pk %}" class="btn btn-danger" style="font-size: 0.9rem;">Delete</a>
-            {% endif %}
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1.5rem;">
+            <div style="display: flex; align-items: start; gap: 1rem;">
+                <!-- Author Avatar -->
+                <div style="flex-shrink: 0;">
+                    {% if post.author.avatar %}
+                        <img src="{{ post.author.avatar.url }}" alt="{{ post.author.username }}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
+                    {% else %}
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; border: 2px solid var(--accent);">
+                            {{ post.author.username|first|upper }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Post Content -->
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <h4 style="margin: 0; color: var(--accent-2);">
+                            <a href="{% url 'profiles:detail' username=post.author.username %}" style="color: inherit; text-decoration: none;">{{ post.author.username }}</a>
+                        </h4>
+                        <span style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">{{ post.created_at|date:"F d, Y g:i A" }}</span>
+                        {% if post.is_edited %}
+                            <span style="background: rgba(255,193,7,0.2); color: #ffd54f; padding: 0.2rem 0.5rem; border-radius: 8px; font-size: 0.75rem;">✏️ edited</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div style="color: var(--muted); line-height: 1.6; margin-bottom: 1rem;">
+                        {{ post.content|linebreaks }}
+                    </div>
+                    
+                    {% if user == post.author %}
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{% url 'forums:post_update' pk=post.pk %}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">✏️ Edit</a>
+                            <a href="{% url 'forums:post_delete' pk=post.pk %}" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">🗑️ Delete</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     {% empty %}
-        <p>No replies yet. Be the first to reply!</p>
+        <div style="text-align: center; padding: 3rem; color: var(--muted);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+            <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">No replies yet</p>
+            <p>Be the first to join the discussion!</p>
+            {% if user.is_authenticated and not topic.is_locked %}
+                <a href="{% url 'forums:post_create' topic_pk=topic.pk %}" class="btn" style="margin-top: 1rem;">Add Reply</a>
+            {% endif %}
+        </div>
     {% endfor %}
 </div>
 {% endblock %}

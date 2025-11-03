@@ -90,27 +90,86 @@
         </div>
     {% endif %}
     
-    <div style="margin-top: 1rem;">
-        <h3>Members ({{ project.members.count|add:1 }})</h3>
-        <p><a href="{% url 'profiles:detail' username=project.creator.username %}">{{ project.creator.username }}</a> (Creator)</p>
+</div>
+
+<!-- Team Section -->
+<div class="card">
+    <h2 style="color: var(--accent-2); margin-bottom: 1.5rem;">👥 Project Team ({{ project.members.count|add:1 }})</h2>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+        <!-- Creator -->
+        <div class="card" style="padding: 1rem; text-align: center;">
+            {% if project.creator.avatar %}
+                <img src="{{ project.creator.avatar.url }}" alt="{{ project.creator.username }}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #ffc107; margin-bottom: 0.5rem;">
+            {% else %}
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ffc107, #fd7e14); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.5rem; margin: 0 auto 0.5rem; border: 3px solid #ffc107;">
+                    {{ project.creator.username|first|upper }}
+                </div>
+            {% endif %}
+            <h4 style="margin: 0; color: var(--accent-2);">
+                <a href="{% url 'profiles:detail' username=project.creator.username %}" style="color: inherit; text-decoration: none;">{{ project.creator.username }}</a>
+            </h4>
+            <span style="background: #ffc107; color: #000; padding: 0.2rem 0.5rem; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">Creator</span>
+        </div>
+        
+        <!-- Members -->
         {% for member in project.members.all %}
-            <p><a href="{% url 'profiles:detail' username=member.username %}">{{ member.username }}</a></p>
+            <div class="card" style="padding: 1rem; text-align: center;">
+                {% if member.avatar %}
+                    <img src="{{ member.avatar.url }}" alt="{{ member.username }}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); margin-bottom: 0.5rem;">
+                {% else %}
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.5rem; margin: 0 auto 0.5rem; border: 2px solid var(--accent);">
+                        {{ member.username|first|upper }}
+                    </div>
+                {% endif %}
+                <h4 style="margin: 0; color: var(--accent-2);">
+                    <a href="{% url 'profiles:detail' username=member.username %}" style="color: inherit; text-decoration: none;">{{ member.username }}</a>
+                </h4>
+                <span style="color: var(--muted); font-size: 0.8rem;">Member</span>
+            </div>
         {% endfor %}
     </div>
 </div>
 
+<!-- Project Updates -->
 <div class="card">
-    <h2>Project Updates</h2>
-    {% if user.is_authenticated %}
-        <a href="{% url 'projects:update_create' pk=project.pk %}" class="btn">Add Update</a>
-    {% endif %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="color: var(--accent-2); margin: 0;">📝 Project Updates</h2>
+        {% if user == project.creator or user in project.members.all %}
+            <a href="{% url 'projects:update_create' pk=project.pk %}" class="btn">➕ Add Update</a>
+        {% endif %}
+    </div>
+    
     {% for update in project.updates.all %}
-        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ddd;">
-            <p><strong>{{ update.author.username }}</strong> - {{ update.created_at|date:"F d, Y g:i A" }}</p>
-            <p>{{ update.content|linebreaks }}</p>
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                {% if update.author.avatar %}
+                    <img src="{{ update.author.avatar.url }}" alt="{{ update.author.username }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
+                {% else %}
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; border: 2px solid var(--accent);">
+                        {{ update.author.username|first|upper }}
+                    </div>
+                {% endif %}
+                <div>
+                    <h4 style="margin: 0; color: var(--accent-2);">
+                        <a href="{% url 'profiles:detail' username=update.author.username %}" style="color: inherit; text-decoration: none;">{{ update.author.username }}</a>
+                    </h4>
+                    <span style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">{{ update.created_at|date:"F d, Y g:i A" }}</span>
+                </div>
+            </div>
+            <div style="color: var(--muted); line-height: 1.6;">
+                {{ update.content|linebreaks }}
+            </div>
         </div>
     {% empty %}
-        <p>No updates yet.</p>
+        <div style="text-align: center; padding: 3rem; color: var(--muted);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📝</div>
+            <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">No updates yet</p>
+            <p>Share progress and milestones with your team!</p>
+            {% if user == project.creator or user in project.members.all %}
+                <a href="{% url 'projects:update_create' pk=project.pk %}" class="btn" style="margin-top: 1rem;">Add First Update</a>
+            {% endif %}
+        </div>
     {% endfor %}
 </div>
 {% endblock %}

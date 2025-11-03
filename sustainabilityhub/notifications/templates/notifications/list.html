@@ -4,29 +4,39 @@
 
 {% block content %}
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h1>Notifications {% if unread_count > 0 %}({{ unread_count }} unread){% endif %}</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 style="color: var(--accent-2);">🔔 Notifications {% if unread_count > 0 %}({{ unread_count }} unread){% endif %}</h1>
         {% if unread_count > 0 %}
             <a href="{% url 'notifications:mark_all_read' %}" class="btn">Mark All as Read</a>
         {% endif %}
     </div>
     
     {% for notification in notifications %}
-        <div class="card" style="margin-bottom: 1rem; {% if not notification.is_read %}background-color: #e8f5e9;{% endif %}">
-            <h3>{{ notification.title }}</h3>
-            <p>{{ notification.message }}</p>
-            <p><small>{{ notification.created_at|date:"F d, Y g:i A" }}</small></p>
-            <div>
-                {% if notification.url %}
-                    <a href="{% url 'notifications:mark_read' pk=notification.pk %}" class="btn">View</a>
-                {% else %}
-                    <a href="{% url 'notifications:mark_read' pk=notification.pk %}" class="btn">Mark as Read</a>
+        <div class="card" style="margin-bottom: 1rem; {% if not notification.is_read %}background: rgba(45,134,89,0.15); border-left: 4px solid var(--accent);{% else %}background: rgba(255,255,255,0.02);{% endif %}">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                <div style="flex: 1;">
+                    <h3 style="color: var(--accent-2); margin-bottom: 0.5rem;">{{ notification.title }}</h3>
+                    <p style="color: var(--muted); margin-bottom: 0.75rem; line-height: 1.5;">{{ notification.message }}</p>
+                    <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem; margin: 0;">{{ notification.created_at|date:"F d, Y g:i A" }}</p>
+                </div>
+                {% if not notification.is_read %}
+                    <span style="background: var(--accent); color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">New</span>
                 {% endif %}
-                <a href="{% url 'notifications:delete' pk=notification.pk %}" class="btn btn-danger">Delete</a>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+                {% if notification.url %}
+                    <a href="{% url 'notifications:mark_read' pk=notification.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.9rem;">View</a>
+                {% else %}
+                    <a href="{% url 'notifications:mark_read' pk=notification.pk %}" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Mark as Read</a>
+                {% endif %}
+                <a href="{% url 'notifications:delete' pk=notification.pk %}" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Delete</a>
             </div>
         </div>
     {% empty %}
-        <p>No notifications.</p>
+        <div style="text-align: center; padding: 3rem; color: var(--muted);">
+            <p style="font-size: 1.1rem;">📭 No notifications yet</p>
+            <p style="margin-top: 0.5rem;">You'll see updates about your activities here</p>
+        </div>
     {% endfor %}
 </div>
 {% endblock %}

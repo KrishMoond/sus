@@ -3,48 +3,162 @@
 {% block title %}{{ event.title }}{% endblock %}
 
 {% block content %}
-<div class="card">
+<!-- Event Header -->
+<div class="card" style="padding: 0; overflow: hidden;">
     {% if event.image %}
-        <img src="{{ event.image.url }}" alt="{{ event.title }}" style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 4px; margin-bottom: 1rem;">
+        <img src="{{ event.image.url }}" alt="{{ event.title }}" style="width: 100%; height: 300px; object-fit: cover;">
+    {% else %}
+        <div style="width: 100%; height: 300px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-size: 5rem;">
+            {% if event.event_type == 'workshop' %}🛠️
+            {% elif event.event_type == 'conference' %}🎤
+            {% elif event.event_type == 'meetup' %}🤝
+            {% elif event.event_type == 'webinar' %}💻
+            {% elif event.event_type == 'volunteer' %}🤲
+            {% else %}🎆{% endif %}
+        </div>
     {% endif %}
-    <h1>{{ event.title }}</h1>
-    <p><strong>Type:</strong> {{ event.get_event_type_display }}</p>
-    <p><strong>Organizer:</strong> <a href="{% url 'profiles:detail' username=event.organizer.username %}">{{ event.organizer.username }}</a></p>
-    <p><strong>Start:</strong> {{ event.start_date|date:"F d, Y g:i A" }}</p>
-    {% if event.end_date %}
-        <p><strong>End:</strong> {{ event.end_date|date:"F d, Y g:i A" }}</p>
-    {% endif %}
-    <p><strong>Location:</strong> {{ event.location }}</p>
-    {% if event.is_online and event.online_link %}
-        <p><strong>Online Link:</strong> <a href="{{ event.online_link }}" target="_blank">{{ event.online_link }}</a></p>
-    {% endif %}
-    <p><strong>Participants:</strong> {{ event.participant_count }}{% if event.max_participants %}/{{ event.max_participants }}{% endif %}</p>
     
-    <div style="margin: 1.5rem 0;">
-        {{ event.description|linebreaks }}
+    <div style="padding: 2rem;">
+        <!-- Event Badges -->
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+            <span style="background: rgba(45,134,89,0.2); color: var(--accent-2); padding: 0.4rem 0.8rem; border-radius: 12px; font-size: 0.9rem; font-weight: 600;">
+                {{ event.get_event_type_display }}
+            </span>
+            {% if event.is_online %}
+                <span style="background: rgba(23,162,184,0.2); color: #bfe9ff; padding: 0.4rem 0.8rem; border-radius: 12px; font-size: 0.9rem;">🌐 Online Event</span>
+            {% endif %}
+            {% if event.start_date > now %}
+                <span style="background: rgba(40,167,69,0.2); color: #90ee90; padding: 0.4rem 0.8rem; border-radius: 12px; font-size: 0.9rem;">✅ Upcoming</span>
+            {% else %}
+                <span style="background: rgba(108,117,125,0.2); color: #adb5bd; padding: 0.4rem 0.8rem; border-radius: 12px; font-size: 0.9rem;">📅 Past Event</span>
+            {% endif %}
+        </div>
+        
+        <h1 style="color: var(--accent-2); margin-bottom: 1.5rem; font-size: 2.2rem; line-height: 1.2;">{{ event.title }}</h1>
+        
+        <!-- Event Info Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div>
+                <h3 style="color: var(--accent-2); margin-bottom: 1rem; font-size: 1.1rem;">🗺 Event Details</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.95rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; color: var(--muted);">
+                        <span style="width: 20px;">🕰</span>
+                        <span><strong>Start:</strong> {{ event.start_date|date:"F d, Y g:i A" }}</span>
+                    </div>
+                    {% if event.end_date %}
+                        <div style="display: flex; align-items: center; gap: 0.75rem; color: var(--muted);">
+                            <span style="width: 20px;">🏁</span>
+                            <span><strong>End:</strong> {{ event.end_date|date:"F d, Y g:i A" }}</span>
+                        </div>
+                    {% endif %}
+                    <div style="display: flex; align-items: center; gap: 0.75rem; color: var(--muted);">
+                        <span style="width: 20px;">📍</span>
+                        <span><strong>Location:</strong> {{ event.location }}</span>
+                    </div>
+                    {% if event.is_online and event.online_link %}
+                        <div style="display: flex; align-items: center; gap: 0.75rem; color: var(--muted);">
+                            <span style="width: 20px;">🔗</span>
+                            <span><strong>Link:</strong> <a href="{{ event.online_link }}" target="_blank" style="color: var(--accent-2);">Join Online</a></span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div>
+                <h3 style="color: var(--accent-2); margin-bottom: 1rem; font-size: 1.1rem;">👥 Participation</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.95rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; color: var(--muted);">
+                        <span style="width: 20px;">👤</span>
+                        <span><strong>Organizer:</strong> <a href="{% url 'profiles:detail' username=event.organizer.username %}" style="color: var(--accent-2);">{{ event.organizer.username }}</a></span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; color: var(--muted);">
+                        <span style="width: 20px;">🎟</span>
+                        <span><strong>Registered:</strong> {{ event.participant_count }}{% if event.max_participants %}/{{ event.max_participants }}{% endif %}</span>
+                    </div>
+                    {% if event.max_participants %}
+                        <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 0.5rem; margin-top: 0.5rem;">
+                            <div style="background: var(--accent); height: 6px; border-radius: 3px; width: {{ event.participant_count|floatformat:0 }}{% widthratio event.participant_count event.max_participants 100 %}%;"></div>
+                            <small style="color: var(--muted); margin-top: 0.25rem; display: block;">{% widthratio event.participant_count event.max_participants 100 %}% full</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+            {% if user.is_authenticated and user != event.organizer and event.start_date > now %}
+                <a href="{% url 'events:register' pk=event.pk %}" class="btn" style="padding: 0.75rem 1.5rem;">
+                    {% if user in event.participants.all %}
+                        ❌ Unregister
+                    {% else %}
+                        {% if event.max_participants and event.participant_count >= event.max_participants %}
+                            🚫 Event Full
+                        {% else %}
+                            ✅ Register Now
+                        {% endif %}
+                    {% endif %}
+                </a>
+            {% endif %}
+            
+            {% if user == event.organizer %}
+                <a href="{% url 'events:update' pk=event.pk %}" class="btn" style="padding: 0.75rem 1.5rem;">✏️ Edit Event</a>
+                <a href="{% url 'events:delete' pk=event.pk %}" class="btn btn-danger" style="padding: 0.75rem 1.5rem;">🗑️ Delete</a>
+            {% endif %}
+        </div>
+        
+        <!-- Event Description -->
+        <div style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 4px solid var(--accent);">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem;">📝 About This Event</h3>
+            <div style="color: var(--muted); line-height: 1.6;">
+                {{ event.description|linebreaks }}
+            </div>
+        </div>
     </div>
+</div>
+
+<!-- Participants Section -->
+<div class="card">
+    <h2 style="color: var(--accent-2); margin-bottom: 1.5rem;">👥 Participants ({{ event.participant_count }})</h2>
     
-    {% if user == event.organizer %}
-        <a href="{% url 'events:update' pk=event.pk %}" class="btn">Edit</a>
-        <a href="{% url 'events:delete' pk=event.pk %}" class="btn btn-danger">Delete</a>
-    {% endif %}
-    {% if user.is_authenticated and user != event.organizer %}
-        <a href="{% url 'events:register' pk=event.pk %}" class="btn">
-            {% if user in event.participants.all %}Unregister{% else %}Register{% endif %}
-        </a>
-    {% endif %}
-    
-    <div style="margin-top: 1rem;">
-        <h3>Participants ({{ event.participant_count }})</h3>
-        <p><strong>Organizer:</strong> <a href="{% url 'profiles:detail' username=event.organizer.username %}">{{ event.organizer.username }}</a></p>
-        {% if event.participants.all %}
-            <p><strong>Attendees:</strong></p>
-            <ul>
-                {% for participant in event.participants.all %}
-                    <li><a href="{% url 'profiles:detail' username=participant.username %}">{{ participant.username }}</a></li>
-                {% endfor %}
-            </ul>
-        {% endif %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+        <!-- Organizer -->
+        <div class="card" style="padding: 1rem; text-align: center;">
+            {% if event.organizer.avatar %}
+                <img src="{{ event.organizer.avatar.url }}" alt="{{ event.organizer.username }}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #ffc107; margin-bottom: 0.5rem;">
+            {% else %}
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ffc107, #fd7e14); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.5rem; margin: 0 auto 0.5rem; border: 3px solid #ffc107;">
+                    {{ event.organizer.username|first|upper }}
+                </div>
+            {% endif %}
+            <h4 style="margin: 0; color: var(--accent-2);">
+                <a href="{% url 'profiles:detail' username=event.organizer.username %}" style="color: inherit; text-decoration: none;">{{ event.organizer.username }}</a>
+            </h4>
+            <span style="background: #ffc107; color: #000; padding: 0.2rem 0.5rem; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">Organizer</span>
+        </div>
+        
+        <!-- Participants -->
+        {% for participant in event.participants.all %}
+            <div class="card" style="padding: 1rem; text-align: center;">
+                {% if participant.avatar %}
+                    <img src="{{ participant.avatar.url }}" alt="{{ participant.username }}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); margin-bottom: 0.5rem;">
+                {% else %}
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.5rem; margin: 0 auto 0.5rem; border: 2px solid var(--accent);">
+                        {{ participant.username|first|upper }}
+                    </div>
+                {% endif %}
+                <h4 style="margin: 0; color: var(--accent-2);">
+                    <a href="{% url 'profiles:detail' username=participant.username %}" style="color: inherit; text-decoration: none;">{{ participant.username }}</a>
+                </h4>
+                <span style="color: var(--muted); font-size: 0.8rem;">Attendee</span>
+            </div>
+        {% empty %}
+            {% if event.participant_count == 0 %}
+                <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--muted);">
+                    <p>No one has registered yet. Be the first!</p>
+                </div>
+            {% endif %}
+        {% endfor %}
     </div>
 </div>
 {% endblock %}

@@ -3,51 +3,140 @@
 {% block title %}Messages{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-        <h1 style="color: var(--accent-2); margin: 0;">💬 Conversations</h1>
-        <a href="{% url 'messaging:find_users' %}" class="btn">➕ Find Users to Message</a>
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="color: var(--accent-2); margin-bottom: 0.5rem;">💬 Your Conversations</h1>
+        <p style="color: var(--muted); margin-bottom: 1.5rem;">Stay connected with the sustainability community</p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{% url 'messaging:find_users' %}" class="btn" style="display: flex; align-items: center; gap: 0.5rem;">
+                <span>👥</span> Find Members
+            </a>
+            {% if conversations and total_unread > 0 %}
+                <form method="post" action="{% url 'messaging:mark_all_read' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span>✓</span> Mark All Read ({{ total_unread }})
+                    </button>
+                </form>
+            {% endif %}
+        </div>
     </div>
     
     {% if conversations %}
         <div style="display: flex; flex-direction: column; gap: 1rem;">
             {% for conversation in conversations %}
-                <div class="card" style="padding: 1.5rem; transition: transform 0.2s;">
-                    <a href="{% url 'messaging:conversation_detail' pk=conversation.pk %}" style="text-decoration: none; color: inherit;">
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            {% for participant in conversation.participants.all %}
-                                {% if participant != user %}
-                                    {% if participant.avatar %}
-                                        <img src="{{ participant.avatar.url }}" alt="{{ participant.username }}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
-                                    {% else %}
-                                        <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; border: 2px solid var(--accent);">
-                                            {{ participant.username|first|upper }}
-                                        </div>
-                                    {% endif %}
-                                    <div style="flex: 1;">
-                                        <h3 style="margin: 0; color: var(--accent-2);">{{ participant.username }}</h3>
-                                        {% if conversation.last_message_time %}
-                                            <p style="margin: 0.5rem 0 0 0; color: var(--muted); font-size: 0.9rem;">Last message: {{ conversation.last_message_time|timesince }} ago</p>
+                {% for participant in conversation.participants.all %}
+                    {% if participant != user %}
+                        <div class="card" style="padding: 0; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.05);" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 35px rgba(0,0,0,0.4)'; this.style.borderColor='rgba(45,134,89,0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.35)'; this.style.borderColor='rgba(255,255,255,0.05)'">
+                            <a href="{% url 'messaging:conversation_detail' pk=conversation.pk %}" style="text-decoration: none; color: inherit; display: block; padding: 1.5rem;">
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    <!-- Avatar with status -->
+                                    <div style="position: relative; flex-shrink: 0;">
+                                        {% if participant.avatar %}
+                                            <img src="{{ participant.avatar.url }}" alt="{{ participant.username }}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent);">
                                         {% else %}
-                                            <p style="margin: 0.5rem 0 0 0; color: var(--muted); font-size: 0.9rem;">No messages yet</p>
+                                            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.4rem; border: 3px solid var(--accent); color: white;">
+                                                {{ participant.username|first|upper }}
+                                            </div>
+                                        {% endif %}
+                                        <!-- Online status indicator -->
+                                        {% if participant.last_login and participant.last_login|timesince|slice:':1' == '0' %}
+                                            <div style="position: absolute; bottom: 2px; right: 2px; width: 18px; height: 18px; background: var(--accent-2); border: 3px solid var(--bg-800); border-radius: 50%;"></div>
                                         {% endif %}
                                     </div>
-                                {% endif %}
-                            {% endfor %}
-                            <span style="color: var(--muted);">→</span>
+                                    
+                                    <!-- Conversation Info -->
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                                            <h3 style="margin: 0; color: var(--accent-2); font-size: 1.1rem; font-weight: 600;">{{ participant.username }}</h3>
+                                            {% if participant.get_full_name %}
+                                                <span style="color: var(--muted); font-size: 0.85rem; font-weight: 500;">({{ participant.get_full_name }})</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Last message preview -->
+                                        {% with conversation.messages.last as last_message %}
+                                            {% if last_message %}
+                                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                                    <span style="color: {% if last_message.sender == user %}var(--accent-2){% else %}rgba(255,255,255,0.7){% endif %}; font-size: 0.85rem; font-weight: 600;">
+                                                        {% if last_message.sender == user %}You:{% else %}{{ last_message.sender.username }}:{% endif %}
+                                                    </span>
+                                                    <span style="color: var(--muted); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ last_message.content|truncatechars:50 }}</span>
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
+                                        
+                                        <!-- Timestamp and status -->
+                                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                                            {% if conversation.last_message_time %}
+                                                <span style="color: rgba(255,255,255,0.5); font-size: 0.8rem; font-weight: 500;">{{ conversation.last_message_time|timesince }} ago</span>
+                                            {% else %}
+                                                <span style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">No messages yet</span>
+                                            {% endif %}
+                                            
+                                            <!-- Unread indicator -->
+                                            {% with conversation.messages.filter|add:"is_read=False,sender__ne="|add:user.id as unread_count %}
+                                                {% if unread_count %}
+                                                    <div style="background: var(--accent-2); color: var(--bg-900); padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">{{ unread_count }} new</div>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Arrow indicator -->
+                                    <div style="color: rgba(255,255,255,0.3); font-size: 1.2rem; transition: transform 0.2s;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='translateX(0)'">→</div>
+                                </div>
+                            </a>
                         </div>
-                    </a>
-                </div>
+                    {% endif %}
+                {% endfor %}
             {% endfor %}
         </div>
+        
+        <!-- Quick Actions -->
+        <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(45,134,89,0.05); border-radius: 12px; border: 1px solid rgba(45,134,89,0.1);">
+            <h4 style="color: var(--accent-2); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>⚡</span> Quick Actions
+            </h4>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <a href="{% url 'messaging:find_users' %}" class="btn btn-secondary" style="flex: 1; min-width: 200px; text-align: center;">🔍 Find New Members</a>
+                <a href="{% url 'projects:list' %}" class="btn btn-secondary" style="flex: 1; min-width: 200px; text-align: center;">🚀 Browse Projects</a>
+                <a href="{% url 'events:list' %}" class="btn btn-secondary" style="flex: 1; min-width: 200px; text-align: center;">📅 Upcoming Events</a>
+            </div>
+        </div>
     {% else %}
-        <div style="text-align: center; padding: 3rem;">
+        <div style="text-align: center; padding: 3rem; background: rgba(45,134,89,0.05); border-radius: 16px; border: 1px solid rgba(45,134,89,0.1);">
             <div style="font-size: 4rem; margin-bottom: 1rem;">💬</div>
-            <h2 style="color: var(--accent-2); margin-bottom: 0.5rem;">No conversations yet</h2>
-            <p style="color: var(--muted); margin-bottom: 2rem;">Start a conversation with someone in the community!</p>
-            <a href="{% url 'messaging:find_users' %}" class="btn">Find Users to Message</a>
+            <h2 style="color: var(--accent-2); margin-bottom: 0.5rem;">Start Your First Conversation!</h2>
+            <p style="color: var(--muted); margin-bottom: 2rem; font-size: 1.1rem; line-height: 1.6;">Connect with sustainability enthusiasts, collaborate on projects, and build meaningful relationships in our community.</p>
+            
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem;">
+                <a href="{% url 'messaging:find_users' %}" class="btn" style="padding: 0.85rem 2rem;">👥 Browse Members</a>
+                <a href="{% url 'projects:list' %}" class="btn btn-secondary" style="padding: 0.85rem 2rem;">🚀 Join Projects</a>
+            </div>
+            
+            <!-- Tips -->
+            <div style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: 12px; margin-top: 2rem;">
+                <h4 style="color: var(--accent-2); margin-bottom: 1rem;">💡 Tips for Great Conversations</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: left;">
+                    <div>
+                        <strong style="color: var(--accent-2);">Be Respectful</strong>
+                        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.25rem 0 0 0;">Treat everyone with kindness and respect</p>
+                    </div>
+                    <div>
+                        <strong style="color: var(--accent-2);">Stay On Topic</strong>
+                        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.25rem 0 0 0;">Focus on sustainability and collaboration</p>
+                    </div>
+                    <div>
+                        <strong style="color: var(--accent-2);">Share Ideas</strong>
+                        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.25rem 0 0 0;">Exchange knowledge and experiences</p>
+                    </div>
+                </div>
+            </div>
         </div>
     {% endif %}
 </div>
+
+
 {% endblock %}
 

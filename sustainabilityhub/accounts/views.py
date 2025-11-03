@@ -1,149 +1,87 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import user_passes_test, login_required
-from django.contrib.auth import get_user_model, authenticate, login, logout
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
-from django.db.models import Count, Q
-from datetime import datetime, timedelta
+from django.contrib.auth import get_user_model, login
 from .forms import CustomUserCreationForm
-from projects.models import Project
-from events.models import Event
-from forums.models import Topic, Post, Category
-from resources.models import Resource
-from notifications.models import Notification
-from messaging.models import Conversation, Message
+from .models import UserWarning
+from notifications.utils import create_notification
 
 User = get_user_model()
 
-
 def register(request):
-    """User registration view"""
-    if request.user.is_authenticated:
-        return redirect('home')
-    
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            username = form.cleaned_data.get('username')
-            # Automatically log the user in after registration
-            from django.contrib.auth import login as auth_login
-            auth_login(request, user)
-            messages.success(request, f'Welcome to Sustainability Hub, {username}! Your account has been created.')
+            login(request, user)
+            messages.success(request, 'Account created successfully!')
             return redirect('home')
-        else:
-            # Show form errors
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'{field.title()}: {error}')
     else:
         form = CustomUserCreationForm()
+    
     return render(request, 'accounts/register.html', {'form': form})
 
+@user_passes_test(lambda u: u.is_superuser)
+def admin_users(request):
+    users = User.objects.all().order_by('-date_joined')
+    return render(request, 'accounts/admin_users.html', {'users': users})
 
-def login_view(request):
-    """User login view"""
-    from django.contrib.auth.forms import AuthenticationForm
-    
-    if request.user.is_authenticated:
-        return redirect('home')
-    
+@user_passes_test(lambda u: u.is_superuser)
+def create_user(request):
     if request.method == 'POST':
-        # Debug: Check if form data is received
-        username = request.POST.get('username', '').strip()
-        password = request.POST.get('password', '')
+        username = request.POST['username']
+        email = request.POST['email']
+        password = request.POST['password']
         
-        if not username or not password:
-            messages.error(request, 'Please enter both username and password.')
-            form = AuthenticationForm()
-            return render(request, 'accounts/login.html', {'form': form})
-        
-        form = AuthenticationForm(request, data=request.POST)
-        
-        if form.is_valid():
-            user = form.get_user()
-            # Ensure user is active
-            if user.is_active:
-                login(request, user)
-                messages.success(request, f'Welcome back, {user.username}!')
-                next_url = request.GET.get('next', '/')
-                return redirect(next_url)
-            else:
-                messages.error(request, 'Your account is inactive. Please contact support.')
+        if User.objects.filter(username=username).exists():
+            messages.error(request, 'Username already exists.')
         else:
-            # Show specific form errors
-            if 'username' in form.errors:
-                for error in form.errors['username']:
-                    messages.error(request, f'Username: {error}')
-            elif 'password' in form.errors:
-                for error in form.errors['password']:
-                    messages.error(request, f'Password: {error}')
-            elif form.non_field_errors():
-                for error in form.non_field_errors():
-                    messages.error(request, str(error))
-            else:
-                messages.error(request, 'Invalid username or password. Please check your credentials and try again.')
-    else:
-        form = AuthenticationForm()
+            user = User.objects.create_user(username=username, email=email, password=password)
+            messages.success(request, f'User {username} created successfully.')
+            return redirect('accounts:admin_users')
     
-    return render(request, 'accounts/login.html', {'form': form})
+    return render(request, 'accounts/create_user.html')
 
+@user_passes_test(lambda u: u.is_superuser)
+def delete_user(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    if request.method == 'POST':
+        if user.is_superuser:
+            messages.error(request, 'Cannot delete superuser.')
+        else:
+            username = user.username
+            user.delete()
+            messages.success(request, f'User {username} deleted successfully.')
+    return redirect('accounts:admin_users')
 
-def logout_view(request):
-    """User logout view"""
-    logout(request)
-    messages.info(request, 'You have been logged out.')
-    return redirect('home')
+@user_passes_test(lambda u: u.is_superuser)
+def warn_user(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    if request.method == 'POST':
+        warning = UserWarning.objects.create(
+            user=user,
+            issued_by=request.user,
+            severity=request.POST['severity'],
+            reason=request.POST['reason'],
+            description=request.POST['description']
+        )
+        
+        # Notify user about warning
+        create_notification(
+            recipient=user,
+            notification_type='warning_issued',
+            title=f'{warning.get_severity_display()} Warning',
+            message=f'Reason: {warning.reason}',
+            url='/accounts/my-warnings/'
+        )
+        
+        messages.success(request, f'Warning issued to {user.username}.')
+        return redirect('accounts:admin_users')
+    
+    return render(request, 'accounts/warn_user.html', {'target_user': user})
 
-
-def is_admin(user):
-    return user.is_authenticated and user.is_superuser
-
-
-@user_passes_test(is_admin)
-def admin_dashboard(request):
-    """Admin dashboard with community statistics and management"""
-    
-    # User Statistics
-    total_users = User.objects.count()
-    active_users_30d = User.objects.filter(last_login__gte=datetime.now() - timedelta(days=30)).count()
-    new_users_7d = User.objects.filter(date_joined__gte=datetime.now() - timedelta(days=7)).count()
-    
-    # Content Statistics
-    total_projects = Project.objects.count()
-    total_events = Event.objects.count()
-    total_topics = Topic.objects.count()
-    total_posts = Post.objects.count()
-    total_resources = Resource.objects.count()
-    
-    # Activity Statistics
-    recent_projects = Project.objects.select_related('creator').order_by('-created_at')[:10]
-    recent_events = Event.objects.select_related('organizer').order_by('-created_at')[:10]
-    recent_topics = Topic.objects.select_related('author').order_by('-created_at')[:10]
-    
-    # User Activity
-    most_active_users = User.objects.annotate(
-        topics_count=Count('topics'),
-        projects_count=Count('created_projects'),
-        events_count=Count('organized_events')
-    ).order_by('-topics_count', '-projects_count')[:10]
-    
-    # Recent Activity
-    recent_notifications = Notification.objects.order_by('-created_at')[:20]
-    
-    context = {
-        'total_users': total_users,
-        'active_users_30d': active_users_30d,
-        'new_users_7d': new_users_7d,
-        'total_projects': total_projects,
-        'total_events': total_events,
-        'total_topics': total_topics,
-        'total_posts': total_posts,
-        'total_resources': total_resources,
-        'recent_projects': recent_projects,
-        'recent_events': recent_events,
-        'recent_topics': recent_topics,
-        'most_active_users': most_active_users,
-        'recent_notifications': recent_notifications,
-    }
-    
-    return render(request, 'admin/dashboard.html', context)
+@user_passes_test(lambda u: u.is_superuser)
+def user_warnings(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    warnings = user.warnings.all()
+    return render(request, 'accounts/user_warnings.html', {'target_user': user, 'warnings': warnings})

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}My Reports{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem;">
+        <h1 style="color: var(--accent-2); margin: 0;">📋 My Reports</h1>
+        <a href="{% url 'rms:create' %}" class="btn">New Report</a>
+    </div>
+    
+    {% for report in reports %}
+        <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div>
+                    <h3 style="color: var(--accent-2);">{{ report.subject }}</h3>
+                    <p style="color: var(--muted); margin: 0.5rem 0;">{{ report.get_category_display }}</p>
+                    <p style="color: var(--muted); font-size: 0.9rem;">{{ report.created_at|date:"M d, Y g:i A" }}</p>
+                </div>
+                {% if report.status == 'pending' %}
+                    <span class="btn btn-danger" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">{{ report.get_status_display }}</span>
+                {% elif report.status == 'investigating' %}
+                    <span class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: #ffc107; color: #000;">{{ report.get_status_display }}</span>
+                {% elif report.status == 'resolved' %}
+                    <span class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: #28a745; color: #fff;">{{ report.get_status_display }}</span>
+                {% else %}
+                    <span class="btn btn-secondary" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">{{ report.get_status_display }}</span>
+                {% endif %}
+            </div>
+            <p style="margin: 1rem 0;">{{ report.description }}</p>
+            {% if report.admin_response %}
+                <div style="background: rgba(45,134,89,0.1); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                    <strong style="color: var(--accent-2);">Admin Response:</strong>
+                    <p style="margin: 0.5rem 0 0 0;">{{ report.admin_response }}</p>
+                </div>
+            {% endif %}
+        </div>
+    {% empty %}
+        <p style="text-align: center; color: var(--muted);">No reports submitted yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

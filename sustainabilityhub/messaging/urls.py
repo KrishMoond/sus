@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     ConversationListView, ConversationDetailView,
-    MessageCreateView, start_conversation, FindUsersView
+    MessageCreateView, start_conversation, FindUsersView, mark_all_read
 )
 
 app_name = 'messaging'
@@ -12,5 +12,6 @@ urlpatterns = [
     path('<int:pk>/', ConversationDetailView.as_view(), name='conversation_detail'),
     path('<int:conversation_pk>/messages/create/', MessageCreateView.as_view(), name='message_create'),
     path('start/<int:user_id>/', start_conversation, name='start_conversation'),
+    path('mark-all-read/', mark_all_read, name='mark_all_read'),
 ]
 

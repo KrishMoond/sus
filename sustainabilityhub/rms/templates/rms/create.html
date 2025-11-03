@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Submit Report{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <h1 style="color: var(--accent-2);">📝 Submit Report</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_category">Category:</label>
+            <select name="category" id="id_category" required>
+                <option value="">Select Category</option>
+                <option value="spam">Spam/Unwanted Content</option>
+                <option value="harassment">Harassment/Bullying</option>
+                <option value="inappropriate">Inappropriate Content</option>
+                <option value="fake">Fake Information</option>
+                <option value="technical">Technical Issue</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="id_subject">Subject:</label>
+            <input type="text" name="subject" id="id_subject" required maxlength="200" placeholder="Brief description of the issue">
+        </div>
+        <div class="form-group">
+            <label for="id_description">Description:</label>
+            <textarea name="description" id="id_description" rows="5" required placeholder="Provide detailed information about the issue"></textarea>
+        </div>
+        <button type="submit" class="btn">Submit Report</button>
+        <a href="{% url 'rms:my_reports' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

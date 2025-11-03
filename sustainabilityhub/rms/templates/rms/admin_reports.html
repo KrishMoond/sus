@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin - Reports{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 style="color: var(--accent-2);">🛡️ Report Management</h1>
+        <div style="display: flex; gap: 0.5rem;">
+            {% if status_counts.pending > 0 %}
+                <span class="btn btn-danger" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">{{ status_counts.pending }} Pending</span>
+            {% endif %}
+            {% if status_counts.investigating > 0 %}
+                <span class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: #ffc107;">{{ status_counts.investigating }} Investigating</span>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap;">
+        <a href="?status=pending" class="btn {% if current_status == 'pending' %}active{% else %}btn-secondary{% endif %}" style="padding: 0.5rem 1rem;">Pending ({{ status_counts.pending }})</a>
+        <a href="?status=investigating" class="btn {% if current_status == 'investigating' %}active{% else %}btn-secondary{% endif %}" style="padding: 0.5rem 1rem;">Investigating ({{ status_counts.investigating }})</a>
+        <a href="?status=resolved" class="btn {% if current_status == 'resolved' %}active{% else %}btn-secondary{% endif %}" style="padding: 0.5rem 1rem;">Resolved ({{ status_counts.resolved }})</a>
+        <a href="?status=rejected" class="btn {% if current_status == 'rejected' %}active{% else %}btn-secondary{% endif %}" style="padding: 0.5rem 1rem;">Rejected ({{ status_counts.rejected }})</a>
+        <a href="?status=all" class="btn {% if current_status == 'all' %}active{% else %}btn-secondary{% endif %}" style="padding: 0.5rem 1rem;">All Reports</a>
+    </div>
+    
+    {% for report in reports %}
+        <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                <div>
+                    <h3 style="color: var(--accent-2);">{{ report.subject }}</h3>
+                    <p style="color: var(--muted); margin: 0.5rem 0;">
+                        <strong>Reporter:</strong> {{ report.reporter.username }} | 
+                        <strong>Category:</strong> {{ report.get_category_display }} |
+                        <strong>Date:</strong> {{ report.created_at|date:"M d, Y g:i A" }}
+                    </p>
+                </div>
+                {% if report.status == 'pending' %}
+                    <span class="btn btn-danger" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">{{ report.get_status_display }}</span>
+                {% elif report.status == 'investigating' %}
+                    <span class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: #ffc107; color: #000;">{{ report.get_status_display }}</span>
+                {% elif report.status == 'resolved' %}
+                    <span class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: #28a745; color: #fff;">{{ report.get_status_display }}</span>
+                {% else %}
+                    <span class="btn btn-secondary" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">{{ report.get_status_display }}</span>
+                {% endif %}
+            </div>
+            
+            <p style="margin-bottom: 1rem;">{{ report.description }}</p>
+            
+            <form method="post" action="{% url 'rms:resolve' pk=report.pk %}" style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px;">
+                {% csrf_token %}
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--muted);">Status:</label>
+                        <select name="status" style="width: 100%;">
+                            <option value="pending" {% if report.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="investigating" {% if report.status == 'investigating' %}selected{% endif %}>Under Investigation</option>
+                            <option value="resolved" {% if report.status == 'resolved' %}selected{% endif %}>Resolved</option>
+                            <option value="rejected" {% if report.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--muted);">Admin Response:</label>
+                    <textarea name="response" rows="3" style="width: 100%;" placeholder="Response to user...">{{ report.admin_response }}</textarea>
+                </div>
+                <button type="submit" class="btn" style="padding: 0.5rem 1rem;">Update Report</button>
+            </form>
+        </div>
+    {% empty %}
+        <p style="text-align: center; color: var(--muted);">No reports to review.</p>
+    {% endfor %}
+</div>
+{% endblock %}

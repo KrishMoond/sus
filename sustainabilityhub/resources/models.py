@@ -29,7 +29,7 @@ class Resource(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='authored_resources')
     resource_type = models.CharField(max_length=20, choices=RESOURCE_TYPE_CHOICES, default='article')
     category = models.ForeignKey(ResourceCategory, on_delete=models.SET_NULL, null=True, related_name='resources')
-    url = models.URLField()
+    url = models.URLField(blank=True)
     image = models.FileField(upload_to='resources/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

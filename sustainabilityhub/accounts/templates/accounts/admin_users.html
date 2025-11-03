@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 style="color: var(--accent-2);">👥 User Management</h1>
+        <a href="{% url 'accounts:create_user' %}" class="btn">Add User</a>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Warnings</th>
+                <th>Joined</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email|default:"No email" }}</td>
+                    <td>
+                        {% if user.is_superuser %}
+                            <span style="color: gold;">🛡️ Superuser</span>
+                        {% elif not user.is_active %}
+                            <span style="color: red;">❌ Deactivated</span>
+                        {% elif user.is_staff %}
+                            <span style="color: blue;">🛠️ Staff</span>
+                        {% else %}
+                            <span style="color: green;">✅ Active</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.warnings.count > 0 %}
+                            <a href="{% url 'accounts:user_warnings' pk=user.pk %}" style="color: #ff6b6b;">
+                                {{ user.warnings.count }} warning{{ user.warnings.count|pluralize }}
+                            </a>
+                        {% else %}
+                            <span style="color: var(--muted);">None</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{% url 'accounts:warn_user' pk=user.pk %}" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #ffc107;">⚠️ Warn</a>
+                            {% if not user.is_superuser %}
+                                <form method="post" action="{% url 'accounts:delete_user' pk=user.pk %}" style="display: inline;" onsubmit="return confirm('Delete user {{ user.username }}?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">🗑️ Delete</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

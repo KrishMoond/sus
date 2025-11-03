@@ -4,6 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.db.models import Q
 from django import forms
 from .models import Event
 
@@ -16,9 +17,26 @@ class EventListView(ListView):
     
     def get_queryset(self):
         queryset = Event.objects.all()
+        
+        # Search functionality
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search) | Q(description__icontains=search) | Q(location__icontains=search)
+            )
+        
+        # Filter by type
         filter_type = self.request.GET.get('type')
         if filter_type:
             queryset = queryset.filter(event_type=filter_type)
+            
+        # Filter by time
+        time_filter = self.request.GET.get('time', 'upcoming')
+        if time_filter == 'upcoming':
+            queryset = queryset.filter(start_date__gte=timezone.now())
+        elif time_filter == 'past':
+            queryset = queryset.filter(start_date__lt=timezone.now())
+            
         return queryset.order_by('start_date')
 
 

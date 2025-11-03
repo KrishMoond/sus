@@ -1,40 +1,149 @@
 {% extends 'base.html' %}
 
-{% block title %}Conversation{% endblock %}
+{% block title %}Chat with {% for participant in conversation.participants.all %}{% if participant != user %}{{ participant.username }}{% endif %}{% endfor %}{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h1>Conversation with 
+<div class="card" style="max-width: 900px; margin: 0 auto; padding: 0; overflow: hidden;">
+    <!-- Chat Header -->
+    <div style="padding: 1.5rem; background: linear-gradient(135deg, rgba(45,134,89,0.15), rgba(45,134,89,0.05)); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 1rem;">
         {% for participant in conversation.participants.all %}
             {% if participant != user %}
-                <a href="{% url 'profiles:detail' username=participant.username %}">{{ participant.username }}</a>
+                <div style="display: flex; align-items: center; gap: 1rem; flex: 1;">
+                    {% if participant.avatar %}
+                        <img src="{{ participant.avatar.url }}" alt="{{ participant.username }}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
+                    {% else %}
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; border: 2px solid var(--accent); color: white;">
+                            {{ participant.username|first|upper }}
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h2 style="margin: 0; color: var(--accent-2); font-size: 1.3rem;">
+                            <a href="{% url 'profiles:detail' username=participant.username %}" style="color: inherit; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--accent-2)'">💬 {{ participant.username }}</a>
+                        </h2>
+                        {% if participant.get_full_name %}
+                            <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">{{ participant.get_full_name }}</p>
+                        {% endif %}
+                        {% if participant.last_login %}
+                            <p style="margin: 0; color: rgba(255,255,255,0.6); font-size: 0.8rem;">
+                                {% if participant.last_login|timesince|slice:':1' == '0' %}
+                                    <span style="color: var(--accent-2);">• Online now</span>
+                                {% else %}
+                                    Last seen {{ participant.last_login|timesince }} ago
+                                {% endif %}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
             {% endif %}
         {% endfor %}
-    </h1>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{% url 'messaging:conversations' %}" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">← Back</a>
+        </div>
+    </div>
     
-    <div style="max-height: 500px; overflow-y: auto; margin-bottom: 1rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 12px;">
+    <!-- Messages Container -->
+    <div id="messages-container" style="height: 500px; overflow-y: auto; padding: 1rem; background: rgba(255,255,255,0.01); scroll-behavior: smooth;">
         {% for message in message_list %}
-            <div style="margin-bottom: 1rem; {% if message.sender == user %}text-align: right;{% endif %}">
-                <p style="color: var(--muted);"><strong style="color: var(--accent-2);">{{ message.sender.username }}</strong> - {{ message.created_at|date:"M d, Y g:i A" }}</p>
-                <p style="display: inline-block; padding: 0.5rem 1rem; background: {% if message.sender == user %}rgba(45,134,89,0.2){% else %}rgba(255,255,255,0.05){% endif %}; color: rgba(255,255,255,0.9); border-radius: 8px;">
-                    {{ message.content|linebreaks }}
-                </p>
+            <div style="margin-bottom: 1.5rem; display: flex; {% if message.sender == user %}justify-content: flex-end;{% else %}justify-content: flex-start;{% endif %}">
+                <div style="max-width: 70%; display: flex; gap: 0.75rem; {% if message.sender == user %}flex-direction: row-reverse;{% endif %}">
+                    <!-- Avatar -->
+                    <div style="flex-shrink: 0;">
+                        {% if message.sender.avatar %}
+                            <img src="{{ message.sender.avatar.url }}" alt="{{ message.sender.username }}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid {% if message.sender == user %}var(--accent){% else %}rgba(255,255,255,0.2){% endif %};">
+                        {% else %}
+                            <div style="width: 36px; height: 36px; border-radius: 50%; background: {% if message.sender == user %}linear-gradient(135deg, var(--accent), var(--accent-2)){% else %}linear-gradient(135deg, #495057, #6c757d){% endif %}; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; border: 2px solid {% if message.sender == user %}var(--accent){% else %}rgba(255,255,255,0.2){% endif %}; color: white;">
+                                {{ message.sender.username|first|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Message Bubble -->
+                    <div>
+                        <div style="padding: 0.75rem 1rem; background: {% if message.sender == user %}linear-gradient(135deg, var(--accent), #238b4e){% else %}rgba(255,255,255,0.08){% endif %}; color: {% if message.sender == user %}white{% else %}rgba(255,255,255,0.95){% endif %}; border-radius: {% if message.sender == user %}18px 18px 4px 18px{% else %}18px 18px 18px 4px{% endif %}; box-shadow: 0 4px 12px rgba(0,0,0,0.2); position: relative;">
+                            <div style="font-size: 0.95rem; line-height: 1.4; word-wrap: break-word;">{{ message.content|linebreaks }}</div>
+                        </div>
+                        <div style="margin-top: 0.25rem; {% if message.sender == user %}text-align: right;{% else %}text-align: left;{% endif %}">
+                            <span style="color: rgba(255,255,255,0.5); font-size: 0.75rem; font-weight: 500;">
+                                {% if message.sender != user %}{{ message.sender.username }} • {% endif %}{{ message.created_at|date:"M d, g:i A" }}
+                                {% if message.is_read and message.sender == user %}
+                                    <span style="color: var(--accent-2); margin-left: 0.25rem;">✓✓</span>
+                                {% elif message.sender == user %}
+                                    <span style="color: rgba(255,255,255,0.4); margin-left: 0.25rem;">✓</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
         {% empty %}
-            <p style="color: var(--muted);">No messages yet. Start the conversation!</p>
+            <div style="text-align: center; padding: 3rem; color: var(--muted);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+                <h3 style="color: var(--accent-2); margin-bottom: 0.5rem;">Start the Conversation!</h3>
+                <p style="font-size: 1.1rem;">Send your first message to begin chatting.</p>
+            </div>
         {% endfor %}
     </div>
     
-    <div>
-        <h3>Send a Message</h3>
-        <form method="post" action="{% url 'messaging:message_create' conversation_pk=conversation.pk %}">
+    <!-- Message Input -->
+    <div style="padding: 1.5rem; background: rgba(255,255,255,0.02); border-top: 1px solid rgba(255,255,255,0.1);">
+        <form method="post" action="{% url 'messaging:message_create' conversation_pk=conversation.pk %}" style="display: flex; gap: 1rem; align-items: flex-end;">
             {% csrf_token %}
-            <div class="form-group">
-                <textarea name="content" rows="3" required></textarea>
+            <div class="form-group" style="flex: 1; margin: 0;">
+                <textarea name="content" rows="2" placeholder="Type your message..." required style="resize: none; border-radius: 20px; padding: 0.75rem 1rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;" onfocus="this.style.borderColor='var(--accent)'; this.style.boxShadow='0 0 0 3px rgba(45,134,89,0.1)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.boxShadow='none'"></textarea>
             </div>
-            <button type="submit" class="btn">Send</button>
+            <button type="submit" class="btn" style="padding: 0.75rem 1.5rem; border-radius: 20px; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🚀</span> Send
+            </button>
         </form>
+        <div style="margin-top: 0.75rem; text-align: center;">
+            <small style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">Press Enter to send • Shift+Enter for new line</small>
+        </div>
     </div>
 </div>
+
+<script>
+// Auto-scroll to bottom and enhance UX
+(function() {
+    const container = document.getElementById('messages-container');
+    const textarea = document.querySelector('textarea[name="content"]');
+    
+    // Scroll to bottom on load
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    // Enhanced textarea behavior
+    if (textarea) {
+        // Auto-resize textarea
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+        
+        // Send on Enter (but not Shift+Enter)
+        textarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.closest('form').submit();
+            }
+        });
+        
+        // Focus on load
+        textarea.focus();
+    }
+    
+    // Scroll to bottom after form submission
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            setTimeout(() => {
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            }, 100);
+        });
+    }
+})();
+</script>
 {% endblock %}
 

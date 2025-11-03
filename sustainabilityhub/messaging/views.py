@@ -18,7 +18,18 @@ class ConversationListView(LoginRequiredMixin, ListView):
             participants=self.request.user
         ).annotate(
             last_message_time=Max('messages__created_at')
-        ).order_by('-last_message_time').distinct()
+        ).order_by('-last_message_time').distinct().prefetch_related(
+            'participants', 'messages'
+        )
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add total unread messages count
+        context['total_unread'] = Message.objects.filter(
+            conversation__participants=self.request.user,
+            is_read=False
+        ).exclude(sender=self.request.user).count()
+        return context
 
 
 class ConversationDetailView(LoginRequiredMixin, DetailView):
@@ -84,17 +95,38 @@ def start_conversation(request, user_id):
     return redirect('messaging:conversation_detail', pk=conversation.pk)
 
 
+def mark_all_read(request):
+    """Mark all messages in user's conversations as read"""
+    if not request.user.is_authenticated:
+        messages.error(request, 'You must be logged in to perform this action.')
+        return redirect('login')
+    
+    if request.method == 'POST':
+        # Mark all unread messages in user's conversations as read
+        Message.objects.filter(
+            conversation__participants=request.user,
+            is_read=False
+        ).exclude(sender=request.user).update(
+            is_read=True,
+            read_at=timezone.now()
+        )
+        messages.success(request, 'All messages marked as read!')
+    
+    return redirect('messaging:conversations')
+
+
 class FindUsersView(LoginRequiredMixin, ListView):
     """View to find and message any user in the community"""
-    from django.contrib.auth import get_user_model
-    
     template_name = 'messaging/find_users.html'
     context_object_name = 'users'
-    paginate_by = 20
+    paginate_by = 24
     
     def get_queryset(self):
+        from django.contrib.auth import get_user_model
         User = get_user_model()
-        queryset = User.objects.exclude(id=self.request.user.id).select_related('profile')
+        
+        # Show all active users by default for better collaboration
+        queryset = User.objects.exclude(id=self.request.user.id).filter(is_active=True)
         
         search = self.request.GET.get('search')
         if search:
@@ -105,4 +137,10 @@ class FindUsersView(LoginRequiredMixin, ListView):
                 Q(email__icontains=search)
             )
         
-        return queryset.order_by('username')
+        # Order by recent activity (last_login) then username
+        return queryset.order_by('-last_login', 'username')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['total_users'] = self.get_queryset().count()
+        return context

@@ -3,21 +3,136 @@
 {% block title %}{% if object %}Edit{% else %}Create{% endif %} Event{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h1>{% if object %}Edit{% else %}Create{% endif %} Event</h1>
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="color: var(--accent-2); margin-bottom: 0.5rem;">
+            {% if object %}✏️ Edit Event{% else %}➕ Create New Event{% endif %}
+        </h1>
+        <p style="color: var(--muted);">{% if object %}Update your event details{% else %}Organize a sustainability event for the community{% endif %}</p>
+    </div>
+    
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        {% for field in form %}
+        
+        {% if form.non_field_errors %}
+            <div style="padding: 1rem; background: rgba(220,53,69,0.2); color: #ffb3b3; border-radius: 12px; margin-bottom: 1.5rem; border-left: 4px solid #dc3545;">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        
+        <!-- Basic Information -->
+        <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent);">📝 Basic Information</h3>
+            
             <div class="form-group">
-                <label>{{ field.label }}:</label>
-                {{ field }}
-                {% if field.errors %}
-                    <div style="color: #dc3545;">{{ field.errors }}</div>
+                <label for="{{ form.title.id_for_label }}">Event Title:</label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.title.errors }}</div>
                 {% endif %}
             </div>
-        {% endfor %}
-        <button type="submit" class="btn">Save</button>
-        <a href="{% if object %}{% url 'events:detail' pk=object.pk %}{% else %}{% url 'events:list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+            
+            <div class="form-group">
+                <label for="{{ form.description.id_for_label }}">Description:</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.description.errors }}</div>
+                {% endif %}
+                <small style="color: var(--muted); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Describe what attendees can expect from this event</small>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="{{ form.event_type.id_for_label }}">Event Type:</label>
+                    {{ form.event_type }}
+                    {% if form.event_type.errors %}
+                        <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.event_type.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.image.id_for_label }}">Event Image:</label>
+                    {{ form.image }}
+                    {% if form.image.errors %}
+                        <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.image.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Date & Time -->
+        <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent);">🕐 Date & Time</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="{{ form.start_date.id_for_label }}">Start Date:</label>
+                    {{ form.start_date }}
+                    {% if form.start_date.errors %}
+                        <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.start_date.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.end_date.id_for_label }}">End Date (Optional):</label>
+                    {{ form.end_date }}
+                    {% if form.end_date.errors %}
+                        <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.end_date.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Location & Online -->
+        <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent);">📍 Location</h3>
+            
+            <div class="form-group">
+                <label for="{{ form.location.id_for_label }}">Location:</label>
+                {{ form.location }}
+                {% if form.location.errors %}
+                    <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.location.errors }}</div>
+                {% endif %}
+                <small style="color: var(--muted); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Physical address or "Online" for virtual events</small>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: end;">
+                <div class="form-group">
+                    <label for="{{ form.is_online.id_for_label }}">Online Event:</label>
+                    {{ form.is_online }}
+                    {% if form.is_online.errors %}
+                        <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.is_online.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.online_link.id_for_label }}">Online Meeting Link:</label>
+                    {{ form.online_link }}
+                    {% if form.online_link.errors %}
+                        <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.online_link.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Capacity -->
+        <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent);">👥 Capacity</h3>
+            
+            <div class="form-group">
+                <label for="{{ form.max_participants.id_for_label }}">Maximum Participants (Optional):</label>
+                {{ form.max_participants }}
+                {% if form.max_participants.errors %}
+                    <div style="color: #dc3545; margin-top: 0.5rem; font-size: 0.9rem;">{{ form.max_participants.errors }}</div>
+                {% endif %}
+                <small style="color: var(--muted); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Leave empty for unlimited capacity</small>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: center;">
+            <button type="submit" class="btn" style="padding: 0.85rem 2rem;">{% if object %}💾 Update Event{% else %}🚀 Create Event{% endif %}</button>
+            <a href="{% if object %}{% url 'events:detail' pk=object.pk %}{% else %}{% url 'events:list' %}{% endif %}" class="btn btn-secondary" style="padding: 0.85rem 2rem;">Cancel</a>
+        </div>
     </form>
 </div>
 {% endblock %}
