@@ -3,40 +3,110 @@
 {% block title %}My Reports{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem;">
-        <h1 style="color: var(--accent-2); margin: 0;">📋 My Reports</h1>
-        <a href="{% url 'rms:create' %}" class="btn">New Report</a>
+<div class="card" style="max-width: 900px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="color: var(--accent-2); margin-bottom: 0.5rem;">📋 My Reports</h1>
+        <p style="color: var(--muted); margin-bottom: 1.5rem;">Track the status of your submitted reports</p>
+        <a href="{% url 'rms:create' %}" class="btn" style="padding: 0.75rem 2rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+            <span>➕</span> Submit New Report
+        </a>
     </div>
     
     {% for report in reports %}
-        <div class="card" style="margin-bottom: 1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div>
-                    <h3 style="color: var(--accent-2);">{{ report.subject }}</h3>
-                    <p style="color: var(--muted); margin: 0.5rem 0;">{{ report.get_category_display }}</p>
-                    <p style="color: var(--muted); font-size: 0.9rem;">{{ report.created_at|date:"M d, Y g:i A" }}</p>
+        <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid {% if report.status == 'pending' %}#dc3545{% elif report.status == 'investigating' %}#ffc107{% elif report.status == 'resolved' %}#28a745{% else %}#6c757d{% endif %}; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 35px rgba(0,0,0,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.35)'">
+            <!-- Report Header -->
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">
+                        <h3 style="color: var(--accent-2); margin: 0; font-size: 1.2rem;">📋 {{ report.subject }}</h3>
+                        <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.05); padding: 0.25rem 0.75rem; border-radius: 12px;">#{{ report.id }}</span>
+                    </div>
+                    <div style="display: flex; gap: 2rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: var(--accent-2); font-weight: 600;">📂 Category:</span>
+                            <span style="color: var(--muted);">{{ report.get_category_display }}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: var(--accent-2); font-weight: 600;">📅 Submitted:</span>
+                            <span style="color: var(--muted);">{{ report.created_at|date:"M d, Y g:i A" }}</span>
+                        </div>
+                        {% if report.resolved_at %}
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="color: var(--accent-2); font-weight: 600;">✅ Resolved:</span>
+                                <span style="color: var(--muted);">{{ report.resolved_at|date:"M d, Y g:i A" }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
-                {% if report.status == 'pending' %}
-                    <span class="btn btn-danger" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">{{ report.get_status_display }}</span>
-                {% elif report.status == 'investigating' %}
-                    <span class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: #ffc107; color: #000;">{{ report.get_status_display }}</span>
-                {% elif report.status == 'resolved' %}
-                    <span class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: #28a745; color: #fff;">{{ report.get_status_display }}</span>
-                {% else %}
-                    <span class="btn btn-secondary" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">{{ report.get_status_display }}</span>
-                {% endif %}
+                <div>
+                    {% if report.status == 'pending' %}
+                        <span style="padding: 0.5rem 1rem; background: rgba(220,53,69,0.2); border: 1px solid rgba(220,53,69,0.4); border-radius: 20px; color: #ffb3b3; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="width: 8px; height: 8px; background: #dc3545; border-radius: 50%; animation: pulse 2s infinite;"></span>
+                            {{ report.get_status_display }}
+                        </span>
+                    {% elif report.status == 'investigating' %}
+                        <span style="padding: 0.5rem 1rem; background: rgba(255,193,7,0.2); border: 1px solid rgba(255,193,7,0.4); border-radius: 20px; color: #fff3cd; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="width: 8px; height: 8px; background: #ffc107; border-radius: 50%;"></span>
+                            {{ report.get_status_display }}
+                        </span>
+                    {% elif report.status == 'resolved' %}
+                        <span style="padding: 0.5rem 1rem; background: rgba(40,167,69,0.2); border: 1px solid rgba(40,167,69,0.4); border-radius: 20px; color: #d4edda; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="width: 8px; height: 8px; background: #28a745; border-radius: 50%;"></span>
+                            {{ report.get_status_display }}
+                        </span>
+                    {% else %}
+                        <span style="padding: 0.5rem 1rem; background: rgba(108,117,125,0.2); border: 1px solid rgba(108,117,125,0.4); border-radius: 20px; color: #f8f9fa; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="width: 8px; height: 8px; background: #6c757d; border-radius: 50%;"></span>
+                            {{ report.get_status_display }}
+                        </span>
+                    {% endif %}
+                </div>
             </div>
-            <p style="margin: 1rem 0;">{{ report.description }}</p>
+            
+            <!-- Report Description -->
+            <div style="background: rgba(255,255,255,0.03); padding: 1.25rem; border-radius: 12px; margin-bottom: 1rem; border-left: 3px solid var(--accent);">
+                <h4 style="color: var(--accent-2); margin-bottom: 0.75rem; font-size: 1rem;">📝 Your Report:</h4>
+                <p style="margin: 0; line-height: 1.6; color: rgba(255,255,255,0.9);">{{ report.description }}</p>
+            </div>
+            
+            <!-- Admin Response -->
             {% if report.admin_response %}
-                <div style="background: rgba(45,134,89,0.1); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
-                    <strong style="color: var(--accent-2);">Admin Response:</strong>
-                    <p style="margin: 0.5rem 0 0 0;">{{ report.admin_response }}</p>
+                <div style="background: {% if report.status == 'resolved' %}rgba(40,167,69,0.1){% elif report.status == 'rejected' %}rgba(108,117,125,0.1){% else %}rgba(255,193,7,0.1){% endif %}; padding: 1.25rem; border-radius: 12px; border: 1px solid {% if report.status == 'resolved' %}rgba(40,167,69,0.3){% elif report.status == 'rejected' %}rgba(108,117,125,0.3){% else %}rgba(255,193,7,0.3){% endif %};">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                        <span style="font-size: 1.2rem;">🛡️</span>
+                        <strong style="color: var(--accent-2); font-size: 1rem;">Admin Response:</strong>
+                    </div>
+                    <p style="margin: 0; line-height: 1.6; color: rgba(255,255,255,0.9);">{{ report.admin_response }}</p>
+                    {% if report.resolved_by %}
+                        <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <span style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">Handled by: {{ report.resolved_by.username }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            {% elif report.status == 'investigating' %}
+                <div style="background: rgba(255,193,7,0.1); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255,193,7,0.3); text-align: center;">
+                    <span style="color: #fff3cd; font-weight: 600;">🔍 Your report is currently under investigation. We'll update you soon.</span>
+                </div>
+            {% elif report.status == 'pending' %}
+                <div style="background: rgba(220,53,69,0.1); padding: 1rem; border-radius: 12px; border: 1px solid rgba(220,53,69,0.3); text-align: center;">
+                    <span style="color: #ffb3b3; font-weight: 600;">⏳ Your report is in queue for review. Thank you for your patience.</span>
                 </div>
             {% endif %}
         </div>
     {% empty %}
-        <p style="text-align: center; color: var(--muted);">No reports submitted yet.</p>
+        <div style="text-align: center; padding: 4rem; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">📋</div>
+            <h3 style="color: var(--accent-2); margin-bottom: 0.5rem;">No Reports Yet</h3>
+            <p style="color: var(--muted); font-size: 1.1rem; margin-bottom: 2rem;">You haven't submitted any reports. If you encounter any issues, feel free to report them.</p>
+            <a href="{% url 'rms:create' %}" class="btn" style="padding: 0.85rem 2rem;">➕ Submit Your First Report</a>
+        </div>
     {% endfor %}
 </div>
+
+<style>
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+</style>
 {% endblock %}

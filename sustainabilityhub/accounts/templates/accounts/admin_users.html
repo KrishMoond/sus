@@ -3,63 +3,184 @@
 {% block title %}User Management{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-        <h1 style="color: var(--accent-2);">👥 User Management</h1>
-        <a href="{% url 'accounts:create_user' %}" class="btn">Add User</a>
+<div class="card" style="max-width: 1400px; margin: 0 auto;">
+    <!-- Header Section -->
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="color: var(--accent-2); margin-bottom: 0.5rem;">👥 User Management System</h1>
+        <p style="color: var(--muted); margin-bottom: 1.5rem;">Manage community members, monitor activity, and maintain platform security</p>
+        
+        <!-- Statistics Dashboard -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div style="padding: 1rem; background: rgba(45,134,89,0.1); border: 1px solid rgba(45,134,89,0.2); border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: var(--accent-2);">{{ stats.total }}</div>
+                <div style="color: var(--muted); font-size: 0.9rem;">Total Users</div>
+            </div>
+            <div style="padding: 1rem; background: rgba(40,167,69,0.1); border: 1px solid rgba(40,167,69,0.2); border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #28a745;">{{ stats.active }}</div>
+                <div style="color: var(--muted); font-size: 0.9rem;">Active Users</div>
+            </div>
+            <div style="padding: 1rem; background: rgba(220,53,69,0.1); border: 1px solid rgba(220,53,69,0.2); border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #dc3545;">{{ stats.inactive }}</div>
+                <div style="color: var(--muted); font-size: 0.9rem;">Inactive Users</div>
+            </div>
+            <div style="padding: 1rem; background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.2); border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #ffc107;">{{ stats.warned }}</div>
+                <div style="color: var(--muted); font-size: 0.9rem;">Warned Users</div>
+            </div>
+            <div style="padding: 1rem; background: rgba(23,162,184,0.1); border: 1px solid rgba(23,162,184,0.2); border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #17a2b8;">{{ stats.staff }}</div>
+                <div style="color: var(--muted); font-size: 0.9rem;">Staff Members</div>
+            </div>
+        </div>
     </div>
     
-    <table>
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Status</th>
-                <th>Warnings</th>
-                <th>Joined</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in users %}
-                <tr>
-                    <td>{{ user.username }}</td>
-                    <td>{{ user.email|default:"No email" }}</td>
-                    <td>
-                        {% if user.is_superuser %}
-                            <span style="color: gold;">🛡️ Superuser</span>
-                        {% elif not user.is_active %}
-                            <span style="color: red;">❌ Deactivated</span>
-                        {% elif user.is_staff %}
-                            <span style="color: blue;">🛠️ Staff</span>
+    <!-- Search and Filter Section -->
+    <div style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: 16px; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.1);">
+        <form method="get" style="display: flex; gap: 1rem; align-items: end; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 2; min-width: 250px; margin: 0;">
+                <label for="search" style="color: var(--accent-2); font-weight: 600;">🔍 Search Users:</label>
+                <input type="text" name="search" id="search" placeholder="Search by username, email, or name..." value="{{ search }}" style="width: 100%; padding: 0.75rem; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 150px; margin: 0;">
+                <label for="status" style="color: var(--accent-2); font-weight: 600;">📊 Filter by Status:</label>
+                <select name="status" id="status" style="width: 100%; padding: 0.75rem; border-radius: 8px;">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Users</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive Only</option>
+                    <option value="staff" {% if status_filter == 'staff' %}selected{% endif %}>Staff Members</option>
+                    <option value="superuser" {% if status_filter == 'superuser' %}selected{% endif %}>Superusers</option>
+                    <option value="warned" {% if status_filter == 'warned' %}selected{% endif %}>Warned Users</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="btn" style="padding: 0.75rem 1.5rem;">🔍 Search</button>
+                <a href="{% url 'accounts:admin_users' %}" class="btn btn-secondary" style="padding: 0.75rem 1rem;">Clear</a>
+                <a href="{% url 'accounts:create_user' %}" class="btn" style="padding: 0.75rem 1.5rem; background: var(--accent);">➕ Add User</a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Users Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+        {% for user in users %}
+            <div class="card" style="padding: 1.5rem; transition: all 0.3s ease; border-left: 4px solid {% if user.is_superuser %}#ffd700{% elif not user.is_active %}#dc3545{% elif user.is_staff %}#17a2b8{% else %}#28a745{% endif %};" onmouseover="this.style.transform='translateY(-6px)'; this.style.boxShadow='0 12px 35px rgba(0,0,0,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.35)'">
+                <!-- User Header -->
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="position: relative;">
+                        {% if user.avatar %}
+                            <img src="{{ user.avatar.url }}" alt="{{ user.username }}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid {% if user.is_superuser %}#ffd700{% elif not user.is_active %}#dc3545{% elif user.is_staff %}#17a2b8{% else %}#28a745{% endif %};">
                         {% else %}
-                            <span style="color: green;">✅ Active</span>
+                            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.5rem; border: 3px solid {% if user.is_superuser %}#ffd700{% elif not user.is_active %}#dc3545{% elif user.is_staff %}#17a2b8{% else %}#28a745{% endif %}; color: white;">
+                                {{ user.username|first|upper }}
+                            </div>
                         {% endif %}
-                    </td>
-                    <td>
-                        {% if user.warnings.count > 0 %}
-                            <a href="{% url 'accounts:user_warnings' pk=user.pk %}" style="color: #ff6b6b;">
-                                {{ user.warnings.count }} warning{{ user.warnings.count|pluralize }}
-                            </a>
-                        {% else %}
-                            <span style="color: var(--muted);">None</span>
+                        <!-- Status indicator -->
+                        <div style="position: absolute; bottom: 2px; right: 2px; width: 18px; height: 18px; background: {% if user.is_superuser %}#ffd700{% elif not user.is_active %}#dc3545{% elif user.is_staff %}#17a2b8{% else %}#28a745{% endif %}; border: 3px solid var(--bg-800); border-radius: 50%;"></div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0; color: var(--accent-2); font-size: 1.1rem;">{{ user.username }}</h3>
+                        <p style="margin: 0.25rem 0; color: var(--muted); font-size: 0.9rem;">{{ user.email|default:"No email provided" }}</p>
+                        {% if user.get_full_name %}
+                            <p style="margin: 0.25rem 0; color: rgba(255,255,255,0.7); font-size: 0.85rem;">{{ user.get_full_name }}</p>
                         {% endif %}
-                    </td>
-                    <td>{{ user.date_joined|date:"M d, Y" }}</td>
-                    <td>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <a href="{% url 'accounts:warn_user' pk=user.pk %}" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #ffc107;">⚠️ Warn</a>
-                            {% if not user.is_superuser %}
-                                <form method="post" action="{% url 'accounts:delete_user' pk=user.pk %}" style="display: inline;" onsubmit="return confirm('Delete user {{ user.username }}?')">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">🗑️ Delete</button>
-                                </form>
-                            {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Status Badge -->
+                <div style="margin-bottom: 1rem;">
+                    {% if user.is_superuser %}
+                        <span style="padding: 0.5rem 1rem; background: rgba(255,215,0,0.2); border: 1px solid rgba(255,215,0,0.4); border-radius: 20px; color: #ffd700; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                            <span>🛡️</span> Superuser
+                        </span>
+                    {% elif not user.is_active %}
+                        <span style="padding: 0.5rem 1rem; background: rgba(220,53,69,0.2); border: 1px solid rgba(220,53,69,0.4); border-radius: 20px; color: #ffb3b3; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                            <span>❌</span> Deactivated
+                        </span>
+                    {% elif user.is_staff %}
+                        <span style="padding: 0.5rem 1rem; background: rgba(23,162,184,0.2); border: 1px solid rgba(23,162,184,0.4); border-radius: 20px; color: #bee5eb; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                            <span>🛠️</span> Staff Member
+                        </span>
+                    {% else %}
+                        <span style="padding: 0.5rem 1rem; background: rgba(40,167,69,0.2); border: 1px solid rgba(40,167,69,0.4); border-radius: 20px; color: #d4edda; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                            <span>✅</span> Active User
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <!-- User Activity Stats -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                    <div style="text-align: center;">
+                        <div style="color: var(--accent-2); font-weight: bold; font-size: 0.9rem;">{{ user.topics_count }}</div>
+                        <div style="color: var(--muted); font-size: 0.75rem;">Topics Created</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="color: var(--accent-2); font-weight: bold; font-size: 0.9rem;">{{ user.forum_posts_count }}</div>
+                        <div style="color: var(--muted); font-size: 0.75rem;">Forum Posts</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="color: var(--accent-2); font-weight: bold; font-size: 0.9rem;">{{ user.created_projects_count }}</div>
+                        <div style="color: var(--muted); font-size: 0.75rem;">Projects Created</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="color: var(--accent-2); font-weight: bold; font-size: 0.9rem;">{{ user.joined_projects_count }}</div>
+                        <div style="color: var(--muted); font-size: 0.75rem;">Projects Joined</div>
+                    </div>
+                </div>
+                
+                <!-- Warning Stats -->
+                {% if user.warning_count > 0 %}
+                    <div style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); border-radius: 8px; text-align: center;">
+                        <div style="color: #fff3cd; font-weight: bold; font-size: 0.9rem;">⚠️ {{ user.warning_count }} Active Warning{{ user.warning_count|pluralize }}</div>
+                    </div>
+                {% endif %}
+                
+                <!-- Join Date and Last Login -->
+                <div style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: var(--accent-2); font-weight: 600; font-size: 0.85rem;">📅 Joined:</span>
+                        <span style="color: var(--muted); font-size: 0.85rem;">{{ user.date_joined|date:"M d, Y" }}</span>
+                    </div>
+                    {% if user.last_login %}
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--accent-2); font-weight: 600; font-size: 0.85rem;">🕑 Last Login:</span>
+                            <span style="color: var(--muted); font-size: 0.85rem;">{{ user.last_login|timesince }} ago</span>
                         </div>
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    {% else %}
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--accent-2); font-weight: 600; font-size: 0.85rem;">🕑 Last Login:</span>
+                            <span style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">Never</span>
+                        </div>
+                    {% endif %}
+                </div>
+                
+
+                
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <a href="{% url 'accounts:user_detail' pk=user.pk %}" class="btn" style="flex: 1; text-align: center; padding: 0.5rem; font-size: 0.85rem; background: var(--accent);">👁️ View Details</a>
+                    <a href="{% url 'accounts:warn_user' pk=user.pk %}" class="btn" style="flex: 1; text-align: center; padding: 0.5rem; font-size: 0.85rem; background: rgba(255,193,7,0.8); color: #000;">⚠️ Warn</a>
+                    
+                    {% if not user.is_superuser %}
+                        <form method="post" action="{% url 'accounts:toggle_user_status' pk=user.pk %}" style="flex: 1;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn" style="width: 100%; padding: 0.5rem; font-size: 0.85rem; background: {% if user.is_active %}rgba(220,53,69,0.8){% else %}rgba(40,167,69,0.8){% endif %}; color: white;" onclick="return confirm('{% if user.is_active %}Deactivate{% else %}Activate{% endif %} user {{ user.username }}?')">
+                                {% if user.is_active %}🚫 Deactivate{% else %}✅ Activate{% endif %}
+                            </button>
+                        </form>
+                    {% else %}
+                        <div style="flex: 1; text-align: center; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 8px; color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+                            🔒 Protected
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <div style="grid-column: 1 / -1; text-align: center; padding: 4rem; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="font-size: 4rem; margin-bottom: 1rem;">👥</div>
+                <h3 style="color: var(--accent-2); margin-bottom: 0.5rem;">No Users Found</h3>
+                <p style="color: var(--muted); font-size: 1.1rem;">No users match your current search and filter criteria.</p>
+            </div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}

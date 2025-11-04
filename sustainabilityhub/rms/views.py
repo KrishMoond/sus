@@ -55,6 +55,12 @@ def admin_reports(request):
 @user_passes_test(lambda u: u.is_superuser)
 def resolve_report(request, pk):
     report = get_object_or_404(Report, pk=pk)
+    
+    # Prevent editing resolved reports
+    if report.status == 'resolved':
+        messages.error(request, 'Cannot modify a resolved report.')
+        return redirect('rms:admin_reports')
+    
     if request.method == 'POST':
         old_status = report.status
         report.status = request.POST['status']

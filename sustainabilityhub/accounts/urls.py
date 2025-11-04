@@ -13,4 +13,6 @@ urlpatterns = [
     path('delete-user/<int:pk>/', views.delete_user, name='delete_user'),
     path('warn-user/<int:pk>/', views.warn_user, name='warn_user'),
     path('user-warnings/<int:pk>/', views.user_warnings, name='user_warnings'),
+    path('toggle-user/<int:pk>/', views.toggle_user_status, name='toggle_user_status'),
+    path('user-detail/<int:pk>/', views.user_detail, name='user_detail'),
 ]

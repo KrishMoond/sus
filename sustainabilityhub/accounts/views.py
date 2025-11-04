@@ -23,8 +23,60 @@ def register(request):
 
 @user_passes_test(lambda u: u.is_superuser)
 def admin_users(request):
-    users = User.objects.all().order_by('-date_joined')
-    return render(request, 'accounts/admin_users.html', {'users': users})
+    from django.db.models import Q, Count
+    
+    # Get filter parameters
+    search = request.GET.get('search', '')
+    status_filter = request.GET.get('status', 'all')
+    
+    # Base queryset with counts
+    users = User.objects.annotate(
+        warning_count=Count('warnings', filter=Q(warnings__is_active=True)),
+        forum_posts_count=Count('forum_posts', distinct=True),
+        topics_count=Count('topics', distinct=True),
+        created_projects_count=Count('created_projects', distinct=True),
+        joined_projects_count=Count('joined_projects', distinct=True)
+    ).select_related().order_by('-date_joined')
+    
+    # Apply search filter
+    if search:
+        users = users.filter(
+            Q(username__icontains=search) |
+            Q(email__icontains=search) |
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search)
+        )
+    
+    # Apply status filter
+    if status_filter == 'active':
+        users = users.filter(is_active=True, is_superuser=False)
+    elif status_filter == 'inactive':
+        users = users.filter(is_active=False)
+    elif status_filter == 'staff':
+        users = users.filter(is_staff=True)
+    elif status_filter == 'superuser':
+        users = users.filter(is_superuser=True)
+    elif status_filter == 'warned':
+        users = users.filter(warning_count__gt=0)
+    
+    # Get statistics
+    stats = {
+        'total': User.objects.count(),
+        'active': User.objects.filter(is_active=True, is_superuser=False).count(),
+        'inactive': User.objects.filter(is_active=False).count(),
+        'staff': User.objects.filter(is_staff=True).count(),
+        'superuser': User.objects.filter(is_superuser=True).count(),
+        'warned': User.objects.annotate(
+            warning_count=Count('warnings', filter=Q(warnings__is_active=True))
+        ).filter(warning_count__gt=0).count(),
+    }
+    
+    return render(request, 'accounts/admin_users.html', {
+        'users': users,
+        'stats': stats,
+        'search': search,
+        'status_filter': status_filter
+    })
 
 @user_passes_test(lambda u: u.is_superuser)
 def create_user(request):
@@ -85,3 +137,60 @@ def user_warnings(request, pk):
     user = get_object_or_404(User, pk=pk)
     warnings = user.warnings.all()
     return render(request, 'accounts/user_warnings.html', {'target_user': user, 'warnings': warnings})
+
+@user_passes_test(lambda u: u.is_superuser)
+def toggle_user_status(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    if request.method == 'POST':
+        if user.is_superuser:
+            messages.error(request, 'Cannot modify superuser status.')
+        else:
+            user.is_active = not user.is_active
+            user.save()
+            status = 'activated' if user.is_active else 'deactivated'
+            messages.success(request, f'User {user.username} has been {status}.')
+            
+            # Notify user about status change
+            create_notification(
+                recipient=user,
+                notification_type='account_status',
+                title=f'Account {status.title()}',
+                message=f'Your account has been {status} by an administrator.',
+                url='/'
+            )
+    
+    return redirect('accounts:admin_users')
+
+@user_passes_test(lambda u: u.is_superuser)
+def user_detail(request, pk):
+    from django.db.models import Count
+    
+    user = get_object_or_404(User, pk=pk)
+    
+    # Get user's content with counts
+    topics = user.topics.all()[:10]  # Latest 10 topics
+    forum_posts = user.forum_posts.all()[:10]  # Latest 10 posts
+    created_projects = user.created_projects.all()[:10]  # Latest 10 created projects
+    joined_projects = user.joined_projects.all()[:10]  # Latest 10 joined projects
+    warnings = user.warnings.filter(is_active=True)[:10]  # Latest 10 warnings
+    
+    # Get comprehensive stats
+    stats = {
+        'topics_count': user.topics.count(),
+        'forum_posts_count': user.forum_posts.count(),
+        'created_projects_count': user.created_projects.count(),
+        'joined_projects_count': user.joined_projects.count(),
+        'warnings_count': user.warnings.filter(is_active=True).count(),
+        'events_created': user.events_created.count() if hasattr(user, 'events_created') else 0,
+        'resources_shared': user.resources_created.count() if hasattr(user, 'resources_created') else 0,
+    }
+    
+    return render(request, 'accounts/user_detail.html', {
+        'target_user': user,
+        'topics': topics,
+        'forum_posts': forum_posts,
+        'created_projects': created_projects,
+        'joined_projects': joined_projects,
+        'warnings': warnings,
+        'stats': stats,
+    })

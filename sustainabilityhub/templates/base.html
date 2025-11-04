@@ -238,27 +238,17 @@
         .user-dropdown.active .user-dropdown-menu {
             display: block !important;
         }
+        
+        /* Admin Dropdown Styles */
+        .admin-dropdown-menu a:hover {
+            background: rgba(255,215,0,0.1);
+        }
+        
+        .admin-dropdown.active .admin-dropdown-menu {
+            display: block !important;
+        }
 
-        /* Compact search */
-        .nav-search {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: rgba(255,255,255,0.03);
-            padding: 0.2rem;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.03);
-        }
-        .nav-search input{
-            background: transparent;
-            border: none;
-            color: var(--muted);
-            padding: 0.4rem 0.5rem;
-            width: 160px;
-            outline: none;
-            font-size: 0.9rem;
-        }
-        .nav-search input::placeholder{ color: rgba(255,255,255,0.45); }
+
         
         /* Search forms in content */
         form input[type="search"], form input[type="text"] {
@@ -533,9 +523,6 @@
         ::-webkit-scrollbar-thumb{ background: linear-gradient(135deg,var(--accent),#1e5f3f); border-radius:6px; }
 
         /* Responsive */
-        @media (max-width: 920px){
-            .nav-search input{ width: 110px; }
-        }
         @media (max-width: 768px){
             .navbar-container{ align-items:center; }
             .navbar-toggle{ display:flex; }
@@ -557,7 +544,6 @@
                 max-height: 420px;
                 opacity: 1;
             }
-            .nav-search{ display:none; }
         }
 
     </style>
@@ -575,11 +561,6 @@
             <div class="navbar-container">
                 <div class="nav-left">
                     <a href="{% url 'home' %}" class="navbar-brand" aria-label="Sustainability Hub home">🌱 Sustainability Hub</a>
-
-                    <div class="nav-search" role="search" aria-label="Site search">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 21l-4.35-4.35" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="11" r="6" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        <input type="search" placeholder="Search..." aria-label="Search site" />
-                    </div>
                 </div>
 
                 <button class="navbar-toggle" aria-expanded="false" aria-controls="primary-nav" aria-label="Toggle navigation">
@@ -606,9 +587,27 @@
                             {% endif %}
                         </a>
                         {% if user.is_superuser %}
-                            <a role="menuitem" href="{% url 'admin_dashboard' %}" style="color: #ffd700;">🛡️ Admin</a>
-                            <a role="menuitem" href="{% url 'accounts:admin_users' %}" style="color: #17a2b8;">👥 Users</a>
-                            <a role="menuitem" href="{% url 'rms:admin_reports' %}" style="color: #ff6b6b;">📋 Reports</a>
+                            <!-- Admin Dropdown -->
+                            <div class="admin-dropdown" style="position: relative; display: inline-block;">
+                                <button class="admin-dropdown-btn" id="admin-dropdown-toggle" aria-expanded="false" aria-haspopup="true" style="background: transparent; border: none; cursor: pointer; padding: 0.5rem 0.75rem; border-radius: 8px; display: flex; align-items: center; gap: 0.5rem; color: #ffd700; font-weight: 600; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,215,0,0.1)'" onmouseout="this.style.background='transparent'">
+                                    <span>🛡️</span> Admin <span style="font-size: 0.8rem;">▼</span>
+                                </button>
+                                <div class="admin-dropdown-menu" id="admin-dropdown-menu" style="display: none; position: absolute; top: calc(100% + 8px); right: 0; background: rgba(10,16,28,0.98); backdrop-filter: blur(12px); border-radius: 12px; padding: 0.5rem; min-width: 200px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,215,0,0.2); z-index: 1000;">
+                                    <a href="{% url 'admin_dashboard' %}" style="display: block; padding: 0.75rem 1rem; color: #ffd700; text-decoration: none; border-radius: 8px; transition: background 0.2s; font-weight: 600;">
+                                        🏠 Dashboard
+                                    </a>
+                                    <a href="{% url 'accounts:admin_users' %}" style="display: block; padding: 0.75rem 1rem; color: #17a2b8; text-decoration: none; border-radius: 8px; transition: background 0.2s;">
+                                        👥 User Management
+                                    </a>
+                                    <a href="{% url 'rms:admin_reports' %}" style="display: block; padding: 0.75rem 1rem; color: #ff6b6b; text-decoration: none; border-radius: 8px; transition: background 0.2s;">
+                                        📋 Reports & Issues
+                                    </a>
+                                    <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 0.5rem 0;"></div>
+                                    <a href="/admin/" style="display: block; padding: 0.75rem 1rem; color: var(--muted); text-decoration: none; border-radius: 8px; transition: background 0.2s; font-size: 0.9rem;">
+                                        ⚙️ Django Admin
+                                    </a>
+                                </div>
+                            </div>
                         {% endif %}
                         <!-- User Dropdown Menu -->
                         <div class="user-dropdown" style="position: relative; display: inline-block;">
@@ -765,6 +764,10 @@
             if(userDropdownToggle && userDropdownMenu && userDropdown) {
                 userDropdownToggle.addEventListener('click', function(e) {
                     e.stopPropagation();
+                    // Close admin dropdown if open
+                    const adminDropdown = document.querySelector('.admin-dropdown');
+                    if(adminDropdown) adminDropdown.classList.remove('active');
+                    
                     userDropdown.classList.toggle('active');
                     const isExpanded = userDropdown.classList.contains('active');
                     userDropdownToggle.setAttribute('aria-expanded', isExpanded);
@@ -777,6 +780,33 @@
                         userDropdown.classList.remove('active');
                         userDropdownToggle.setAttribute('aria-expanded', 'false');
                         userDropdownMenu.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Admin Dropdown Toggle
+            const adminDropdownToggle = document.getElementById('admin-dropdown-toggle');
+            const adminDropdownMenu = document.getElementById('admin-dropdown-menu');
+            const adminDropdown = document.querySelector('.admin-dropdown');
+            
+            if(adminDropdownToggle && adminDropdownMenu && adminDropdown) {
+                adminDropdownToggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    // Close user dropdown if open
+                    if(userDropdown) userDropdown.classList.remove('active');
+                    
+                    adminDropdown.classList.toggle('active');
+                    const isExpanded = adminDropdown.classList.contains('active');
+                    adminDropdownToggle.setAttribute('aria-expanded', isExpanded);
+                    adminDropdownMenu.style.display = isExpanded ? 'block' : 'none';
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!adminDropdown.contains(e.target)) {
+                        adminDropdown.classList.remove('active');
+                        adminDropdownToggle.setAttribute('aria-expanded', 'false');
+                        adminDropdownMenu.style.display = 'none';
                     }
                 });
             }
@@ -810,16 +840,7 @@
                 });
             }
 
-            // Small enhancement: allow search enter to use GET param 'q'
-            const search = document.querySelector('.nav-search input');
-            if(search){
-                search.addEventListener('keydown', (e)=>{
-                    if(e.key === 'Enter'){
-                        const q = encodeURIComponent(search.value.trim());
-                        if(q) window.location.href = '/search?q=' + q;
-                    }
-                });
-            }
+
         })();
     </script>
 
