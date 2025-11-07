@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}My Warnings{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 1000px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="color: var(--accent-2); margin-bottom: 0.5rem;">⚠️ My Warnings</h1>
+        <p style="color: var(--muted);">Review warnings issued to your account</p>
+    </div>
+    
+    {% if warnings %}
+        <div style="background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); border-radius: 12px; padding: 1rem; margin-bottom: 2rem; text-align: center;">
+            <div style="font-size: 2rem; font-weight: bold; color: #ffc107;">{{ warnings.count }}</div>
+            <div style="color: var(--muted);">Active Warning{{ warnings.count|pluralize }}</div>
+        </div>
+        
+        {% for warning in warnings %}
+            <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid {% if warning.severity == 'low' %}#28a745{% elif warning.severity == 'medium' %}#ffc107{% elif warning.severity == 'high' %}#fd7e14{% else %}#dc3545{% endif %};">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <div style="flex: 1;">
+                        <h3 style="color: var(--accent-2); margin-bottom: 0.5rem;">{{ warning.reason }}</h3>
+                        <div style="color: var(--muted); font-size: 0.9rem;">
+                            <span>📅 {{ warning.created_at|date:"M d, Y g:i A" }}</span>
+                            <span style="margin-left: 1rem;">👤 Issued by: {{ warning.issued_by.username }}</span>
+                        </div>
+                    </div>
+                    {% if warning.severity == 'low' %}
+                        <span style="padding: 0.5rem 1rem; background: rgba(40,167,69,0.2); border: 1px solid rgba(40,167,69,0.4); border-radius: 20px; color: #d4edda; font-weight: 600; font-size: 0.85rem; white-space: nowrap;">
+                            {{ warning.get_severity_display }}
+                        </span>
+                    {% elif warning.severity == 'medium' %}
+                        <span style="padding: 0.5rem 1rem; background: rgba(255,193,7,0.2); border: 1px solid rgba(255,193,7,0.4); border-radius: 20px; color: #fff3cd; font-weight: 600; font-size: 0.85rem; white-space: nowrap;">
+                            {{ warning.get_severity_display }}
+                        </span>
+                    {% elif warning.severity == 'high' %}
+                        <span style="padding: 0.5rem 1rem; background: rgba(253,126,20,0.2); border: 1px solid rgba(253,126,20,0.4); border-radius: 20px; color: #ffe5cc; font-weight: 600; font-size: 0.85rem; white-space: nowrap;">
+                            {{ warning.get_severity_display }}
+                        </span>
+                    {% else %}
+                        <span style="padding: 0.5rem 1rem; background: rgba(220,53,69,0.2); border: 1px solid rgba(220,53,69,0.4); border-radius: 20px; color: #ffb3b3; font-weight: 600; font-size: 0.85rem; white-space: nowrap;">
+                            {{ warning.get_severity_display }}
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                    <p style="margin: 0; color: var(--muted); line-height: 1.6;">{{ warning.description }}</p>
+                </div>
+                
+                {% if warning.severity == 'final' %}
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(220,53,69,0.1); border: 1px solid rgba(220,53,69,0.3); border-radius: 8px;">
+                        <p style="margin: 0; color: #ffb3b3; font-weight: 600;">⚠️ This is a final warning. Further violations may result in account suspension.</p>
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+        
+        <div style="background: rgba(0,119,190,0.1); border: 1px solid rgba(0,119,190,0.3); border-radius: 12px; padding: 1.5rem; margin-top: 2rem;">
+            <h3 style="color: #17a2b8; margin-bottom: 1rem;">📋 Community Guidelines</h3>
+            <p style="color: var(--muted); margin-bottom: 0.5rem;">Please review our community guidelines to avoid future warnings:</p>
+            <ul style="color: var(--muted); margin-left: 1.5rem;">
+                <li>Respect all community members</li>
+                <li>No spam or self-promotion</li>
+                <li>Keep discussions relevant and constructive</li>
+                <li>Report violations instead of engaging</li>
+            </ul>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 4rem 2rem; background: rgba(40,167,69,0.1); border: 1px solid rgba(40,167,69,0.3); border-radius: 16px;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+            <h3 style="color: #28a745; margin-bottom: 0.5rem;">No Active Warnings</h3>
+            <p style="color: var(--muted); font-size: 1.1rem;">Your account is in good standing. Keep up the great work!</p>
+        </div>
+    {% endif %}
+    
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="{% url 'home' %}" class="btn">🏠 Back to Home</a>
+    </div>
+</div>
+{% endblock %}

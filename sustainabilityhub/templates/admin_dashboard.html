@@ -2,6 +2,30 @@
 
 {% block title %}Admin Dashboard{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Force all buttons to be visible */
+    .btn, button, input[type="submit"], a.btn {
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: inline-block !important;
+        pointer-events: auto !important;
+        animation: none !important;
+    }
+    
+    .btn:hover, button:hover, a.btn:hover {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .btn:active, button:active, a.btn:active {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: scale(0.98) !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <h1 style="color: var(--accent-2);">🛡️ Admin Dashboard</h1>

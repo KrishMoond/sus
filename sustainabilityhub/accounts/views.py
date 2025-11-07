@@ -161,6 +161,17 @@ def toggle_user_status(request, pk):
     
     return redirect('accounts:admin_users')
 
+def my_warnings(request):
+    """View for users to see their own warnings"""
+    from django.utils import timezone
+    
+    # Mark all unviewed warnings as viewed
+    request.user.warnings.filter(is_active=True, viewed_at__isnull=True).update(viewed_at=timezone.now())
+    
+    # Get all active warnings
+    warnings = request.user.warnings.filter(is_active=True).order_by('-created_at')
+    return render(request, 'accounts/my_warnings.html', {'warnings': warnings})
+
 @user_passes_test(lambda u: u.is_superuser)
 def user_detail(request, pk):
     from django.db.models import Count

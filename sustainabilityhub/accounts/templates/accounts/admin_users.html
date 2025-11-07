@@ -157,13 +157,13 @@
                 
                 <!-- Action Buttons -->
                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    <a href="{% url 'accounts:user_detail' pk=user.pk %}" class="btn" style="flex: 1; text-align: center; padding: 0.5rem; font-size: 0.85rem; background: var(--accent);">👁️ View Details</a>
-                    <a href="{% url 'accounts:warn_user' pk=user.pk %}" class="btn" style="flex: 1; text-align: center; padding: 0.5rem; font-size: 0.85rem; background: rgba(255,193,7,0.8); color: #000;">⚠️ Warn</a>
+                    <a href="{% url 'accounts:user_warnings' pk=user.pk %}" class="btn" style="flex: 1; text-align: center; padding: 0.5rem; font-size: 0.85rem; background: var(--accent); opacity: 1 !important; visibility: visible !important;">⚠️ View Warnings</a>
+                    <a href="{% url 'accounts:warn_user' pk=user.pk %}" class="btn" style="flex: 1; text-align: center; padding: 0.5rem; font-size: 0.85rem; background: rgba(255,193,7,0.8); color: #000; opacity: 1 !important; visibility: visible !important;">➕ Issue Warning</a>
                     
                     {% if not user.is_superuser %}
                         <form method="post" action="{% url 'accounts:toggle_user_status' pk=user.pk %}" style="flex: 1;">
                             {% csrf_token %}
-                            <button type="submit" class="btn" style="width: 100%; padding: 0.5rem; font-size: 0.85rem; background: {% if user.is_active %}rgba(220,53,69,0.8){% else %}rgba(40,167,69,0.8){% endif %}; color: white;" onclick="return confirm('{% if user.is_active %}Deactivate{% else %}Activate{% endif %} user {{ user.username }}?')">
+                            <button type="submit" class="btn" style="width: 100%; padding: 0.5rem; font-size: 0.85rem; background: {% if user.is_active %}rgba(220,53,69,0.8){% else %}rgba(40,167,69,0.8){% endif %}; color: white; opacity: 1 !important; visibility: visible !important;" onclick="return confirm('{% if user.is_active %}Deactivate{% else %}Activate{% endif %} user {{ user.username }}?')">
                                 {% if user.is_active %}🚫 Deactivate{% else %}✅ Activate{% endif %}
                             </button>
                         </form>
@@ -183,4 +183,43 @@
         {% endfor %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Force all buttons to be visible and exclude from animations */
+    .btn, button, input[type="submit"], a.btn, form button {
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: inline-block !important;
+        pointer-events: auto !important;
+        animation: none !important;
+        will-change: auto !important;
+    }
+    
+    .btn:hover, button:hover, input[type="submit"]:hover, a.btn:hover, form button:hover {
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: inline-block !important;
+    }
+    
+    .btn:active, button:active, input[type="submit"]:active, a.btn:active, form button:active {
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: inline-block !important;
+        transform: scale(0.98) !important;
+    }
+    
+    .btn:focus, button:focus, input[type="submit"]:focus, a.btn:focus, form button:focus {
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: inline-block !important;
+    }
+    
+    /* Ensure button text is always visible */
+    .btn *, button *, input[type="submit"] *, a.btn *, form button * {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+</style>
 {% endblock %}

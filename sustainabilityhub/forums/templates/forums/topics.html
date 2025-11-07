@@ -1,116 +1,981 @@
 {% extends 'base.html' %}
 
-{% block title %}Forums{% endblock %}
+{% block title %}Community Feed{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem;">
-        <h1 style="color: var(--accent-2); margin: 0;">🌏 Community Forums</h1>
-        {% if user.is_authenticated %}
-            <a href="{% url 'forums:topic_create' %}" class="btn">➕ New Topic</a>
+<!-- Create Post Section -->
+{% if user.is_authenticated %}
+<div class="card create-post-card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(45,134,89,0.08), rgba(35,139,78,0.05)); border: 1px solid rgba(45,134,89,0.2);">
+    <div style="display: flex; align-items: flex-start; gap: 1rem;">
+        {% if user.avatar %}
+            <img src="{{ user.avatar.url }}" alt="{{ user.username }}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
+        {% else %}
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; border: 2px solid var(--accent);">
+                {{ user.username|first|upper }}
+            </div>
         {% endif %}
-    </div>
-    
-    <form method="get" style="margin-bottom: 2rem; display: flex; gap: 1rem; align-items: flex-end;">
-        <div class="form-group" style="flex: 1; margin: 0;">
-            <label for="search">Search discussions:</label>
-            <input type="text" name="search" id="search" placeholder="Search topics and discussions..." value="{{ request.GET.search }}" style="width: 100%;">
-        </div>
-        <button type="submit" class="btn">Search</button>
-        {% if request.GET.search %}
-            <a href="{% url 'forums:topics' %}" class="btn btn-secondary">Clear</a>
-        {% endif %}
-    </form>
-    
-    <div style="margin-bottom: 2rem; display:flex; flex-wrap:wrap; gap:0.75rem;">
-        <a href="{% url 'forums:topics' %}" 
-           class="btn btn-secondary {% if not request.GET.category %}active{% endif %}"
-           style="padding: 0.5rem 1rem; font-size: 0.9rem;">
-           💬 All Topics
-        </a>
-        {% for category in categories %}
-            <a href="?category={{ category.id }}" 
-               class="btn btn-secondary {% if request.GET.category == category.id|stringformat:'s' %}active{% endif %}"
-               style="padding: 0.5rem 1rem; font-size: 0.9rem;">
-               {{ category.name }}
-            </a>
-        {% endfor %}
-    </div>
-    
-    {% if request.GET.search %}
-        <p style="color: var(--muted); margin-bottom: 1.5rem;">Showing results for "{{ request.GET.search }}"</p>
-    {% endif %}
-    
-    <div style="display: flex; flex-direction: column; gap: 1rem;">
-        {% for topic in topics %}
-            <div class="card" style="padding: 1.5rem; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                <div style="display: flex; align-items: start; gap: 1rem;">
-                    <!-- Author Avatar -->
-                    <div style="flex-shrink: 0;">
-                        {% if topic.author.avatar %}
-                            <img src="{{ topic.author.avatar.url }}" alt="{{ topic.author.username }}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
-                        {% else %}
-                            <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; border: 2px solid var(--accent);">
-                                {{ topic.author.username|first|upper }}
-                            </div>
-                        {% endif %}
+        
+        <div style="flex: 1;">
+            <textarea id="post-content" placeholder="What's on your mind about sustainability, {{ user.username }}?" style="width: 100%; min-height: 80px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; color: rgba(255,255,255,0.9); resize: vertical; font-family: inherit; font-size: 0.95rem;" oninput="togglePostButton()"></textarea>
+            
+            <form id="post-form" method="post" action="{% url 'forums:create_post' %}" enctype="multipart/form-data" style="display: none;">
+                {% csrf_token %}
+                <input type="hidden" name="content" id="form-content">
+                <input type="hidden" name="post_type" id="form-post-type" value="text">
+                <input type="file" name="image" id="form-image" style="display: none;">
+            </form>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                <div style="display: flex; gap: 0.75rem;">
+                    <button class="post-type-btn" data-type="text" style="background: transparent; border: 1px solid rgba(45,134,89,0.3); color: var(--accent-2); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.85rem;" onclick="selectPostType('text')">
+                        📝 Text
+                    </button>
+                    <button class="post-type-btn" data-type="image" style="background: transparent; border: 1px solid rgba(45,134,89,0.3); color: var(--accent-2); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.85rem;" onclick="selectPostType('image')">
+                        📷 Photo
+                    </button>
+                    <button class="post-type-btn" data-type="link" style="background: transparent; border: 1px solid rgba(45,134,89,0.3); color: var(--accent-2); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.85rem;" onclick="selectPostType('link')">
+                        🔗 Link
+                    </button>
+                </div>
+                
+                <div style="display: flex; gap: 0.5rem;">
+                    <button id="create-post-btn" class="btn" style="opacity: 0.5; cursor: not-allowed; padding: 0.75rem 1.5rem;" disabled onclick="createPost()">
+                        Share Post
+                    </button>
+                    <button type="button" onclick="createPostSimple()" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">Simple Post</button>
+                </div>
+            </div>
+            
+            <!-- Additional fields for different post types -->
+            <div id="image-upload" style="display: none; margin-top: 1rem;">
+                <div style="border: 2px dashed rgba(45,134,89,0.3); border-radius: 12px; padding: 2rem; text-align: center; background: rgba(45,134,89,0.05);">
+                    <input type="file" id="post-image" accept="image/*" style="display: none;" onchange="previewImage(this)">
+                    <div id="image-preview" style="display: none; margin-bottom: 1rem;">
+                        <img id="preview-img" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                        <button type="button" onclick="removeImage()" style="display: block; margin: 0.5rem auto 0; background: rgba(255,0,0,0.2); border: 1px solid rgba(255,0,0,0.3); color: #ff6b6b; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer;">Remove</button>
                     </div>
-                    
-                    <!-- Topic Content -->
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-                            {% if topic.is_pinned %}
-                                <span style="background: #ffc107; color: #000; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">📌 Pinned</span>
-                            {% endif %}
-                            {% if topic.category %}
-                                <span style="background: rgba(45,134,89,0.2); color: var(--accent-2); padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem;">{{ topic.category.name }}</span>
-                            {% endif %}
-                        </div>
-                        
-                        <h3 style="margin: 0 0 0.5rem 0; color: var(--accent-2);">
-                            <a href="{% url 'forums:topic_detail' pk=topic.pk %}" style="color: inherit; text-decoration: none;">{{ topic.title }}</a>
-                        </h3>
-                        
-                        <p style="color: var(--muted); margin: 0 0 1rem 0; font-size: 0.9rem; line-height: 1.4;">{{ topic.content|truncatewords:30|striptags }}</p>
-                        
-                        <div style="display: flex; align-items: center; gap: 1.5rem; font-size: 0.85rem; color: rgba(255,255,255,0.6);">
-                            <span>👤 <a href="{% url 'profiles:detail' username=topic.author.username %}" style="color: var(--accent-2); text-decoration: none;">{{ topic.author.username }}</a></span>
-                            <span>💬 {{ topic.post_count }} replies</span>
-                            <span>👁 {{ topic.views }} views</span>
-                            <span>🕰 {{ topic.updated_at|timesince }} ago</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 0.5rem;">
-                        {% if topic.likes.count > 0 %}
-                            <span style="background: rgba(45,134,89,0.2); color: var(--accent-2); padding: 0.3rem 0.6rem; border-radius: 12px; font-size: 0.8rem; text-align: center;">
-                                ❤️ {{ topic.likes.count }}
-                            </span>
-                        {% endif %}
+                    <div id="upload-prompt">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📷</div>
+                        <p style="color: var(--accent-2); margin: 0 0 0.5rem 0;">Click to upload an image</p>
+                        <p style="color: var(--muted); font-size: 0.8rem; margin: 0;">JPG, PNG, GIF up to 10MB</p>
+                        <button type="button" onclick="document.getElementById('post-image').click()" style="background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; margin-top: 0.75rem; cursor: pointer;">Choose File</button>
                     </div>
                 </div>
             </div>
-        {% empty %}
-            <div class="card" style="text-align: center; padding: 3rem;">
-                {% if request.GET.search %}
-                    <p style="color: var(--muted); font-size: 1.2rem;">No topics found for "{{ request.GET.search }}"</p>
-                    <a href="{% url 'forums:topics' %}" class="btn" style="margin-top: 1rem;">View All Topics</a>
-                {% else %}
-                    <p style="color: var(--muted); font-size: 1.2rem;">🌏 No discussions yet</p>
-                    {% if user.is_authenticated %}
-                        <a href="{% url 'forums:topic_create' %}" class="btn" style="margin-top: 1rem;">Start First Discussion</a>
+            
+            <div id="link-input" style="display: none; margin-top: 1rem;">
+                <input type="url" id="post-link" placeholder="Enter URL to share..." style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: rgba(255,255,255,0.9);">
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Feed Header -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h1 style="color: var(--accent-2); margin: 0; display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 2rem;">🌍</span> Community Feed
+    </h1>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <select id="feed-filter" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.9); padding: 0.5rem 1rem; border-radius: 8px;">
+            <option value="recent">Most Recent</option>
+            <option value="popular">Most Popular</option>
+            <option value="trending">Trending</option>
+        </select>
+    </div>
+</div>
+<!-- Feed Content -->
+<div class="feed-container" style="max-width: 600px; margin: 0 auto;">
+    <!-- Real Feed Posts -->
+    {% for post in posts %}
+    <div class="feed-post card" data-post-id="{{ post.id }}" style="margin-bottom: 1.5rem; padding: 0; overflow: hidden;">
+        <!-- Post Header -->
+        <div style="padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem;">
+            {% if post.author.avatar %}
+                <img src="{{ post.author.avatar.url }}" alt="{{ post.author.username }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
+            {% else %}
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white;">
+                    {{ post.author.username|first|upper }}
+                </div>
+            {% endif %}
+            <div style="flex: 1;">
+                <div style="font-weight: 600; color: var(--accent-2);">{{ post.author.username }}</div>
+                <div style="font-size: 0.8rem; color: var(--muted);">{{ post.created_at|timesince }} ago{% if post.is_edited %} • edited{% endif %}</div>
+            </div>
+            {% if post.author == user %}
+            <div class="post-actions" style="display: flex; gap: 0.5rem;">
+                <button onclick="editPost({{ post.id }})" style="background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 0.25rem; border-radius: 4px; transition: all 0.2s;" title="Edit post">
+                    ✏️
+                </button>
+                <button onclick="deletePost({{ post.id }})" style="background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 0.25rem; border-radius: 4px; transition: all 0.2s;" title="Delete post">
+                    🗑️
+                </button>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Post Content -->
+        <div style="padding: 0 1.5rem 1rem;">
+            <div class="post-content-text" data-post-id="{{ post.id }}">
+                <p style="margin: 0 0 1rem 0; line-height: 1.5; color: rgba(255,255,255,0.9);">{{ post.content }}</p>
+            </div>
+            
+            <!-- Edit form (hidden by default) -->
+            <div class="edit-form" id="edit-form-{{ post.id }}" style="display: none; margin-bottom: 1rem;">
+                <textarea class="edit-textarea" style="width: 100%; min-height: 80px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.75rem; color: rgba(255,255,255,0.9); resize: vertical; font-family: inherit;">{{ post.content }}</textarea>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button onclick="saveEdit({{ post.id }})" class="btn btn-sm" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Save</button>
+                    <button onclick="cancelEdit({{ post.id }})" class="btn btn-secondary btn-sm" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Cancel</button>
+                </div>
+            </div>
+            
+            {% if post.image %}
+            <div style="border-radius: 12px; overflow: hidden; margin-bottom: 1rem; position: relative;">
+                <img src="{{ post.image.url }}" alt="Post image" style="width: 100%; height: auto; max-height: 400px; object-fit: cover; cursor: pointer;" onclick="openImageModal('{{ post.image.url }}')">
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Post Actions -->
+        <div style="padding: 0 1.5rem 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div style="display: flex; gap: 1.5rem;">
+                    <button class="reaction-btn" data-post-id="{{ post.id }}" data-type="like" style="background: transparent; border: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; border-radius: 8px; transition: all 0.2s;">
+                        👍 <span class="reaction-count">{{ post.reactions.count }}</span>
+                    </button>
+                    <button class="comment-toggle" data-post-id="{{ post.id }}" style="background: transparent; border: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; border-radius: 8px; transition: all 0.2s;">
+                        💬 <span>{{ post.comments.count }}</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Comments Section -->
+            <div class="comments-section" style="background: rgba(255,255,255,0.02); border-radius: 8px; padding: 0.75rem;">
+                <div class="comments-list">
+                    {% for comment in post.comments.all|slice:":3" %}
+                    <div style="display: flex; align-items: start; gap: 0.75rem; margin-bottom: 0.75rem;">
+                        {% if comment.author.avatar %}
+                            <img src="{{ comment.author.avatar.url }}" alt="{{ comment.author.username }}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                        {% else %}
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #FF9800, #F57C00); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; color: white;">
+                                {{ comment.author.username|first|upper }}
+                            </div>
+                        {% endif %}
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.8rem;"><span style="font-weight: 600; color: var(--accent-2);">{{ comment.author.username }}</span> <span style="color: var(--muted);">{{ comment.content }}</span></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if user.is_authenticated %}
+                <div class="comment-form" style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.75rem;">
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" alt="{{ user.username }}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                    {% else %}
+                        <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; color: white;">
+                            {{ user.username|first|upper }}
+                        </div>
                     {% endif %}
+                    <input type="text" class="comment-input" data-post-id="{{ post.id }}" placeholder="Write a comment..." style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 0.5rem 1rem; color: rgba(255,255,255,0.9); font-size: 0.85rem;">
+                </div>
                 {% endif %}
             </div>
-        {% endfor %}
+        </div>
     </div>
+    {% empty %}
+    <div class="card" style="text-align: center; padding: 3rem;">
+        <p style="color: var(--muted); font-size: 1.2rem;">🌍 No posts yet</p>
+        {% if user.is_authenticated %}
+            <p style="color: var(--muted); margin-top: 1rem;">Be the first to share something with the community!</p>
+        {% endif %}
+    </div>
+    {% endfor %}
 </div>
 
 <style>
-.btn.active {
-    background-color: #2d8659 !important;
-    color: white !important;
+.post-type-btn.active {
+    background: rgba(45,134,89,0.3) !important;
+    border-color: var(--accent) !important;
+    color: var(--accent-2) !important;
+}
+
+.feed-post {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feed-post:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(0,0,0,0.4);
+}
+
+.reaction-btn:hover {
+    color: var(--accent-2) !important;
+}
+
+.reaction-btn.active {
+    color: var(--accent-2) !important;
+    background: rgba(45,134,89,0.2) !important;
+}
+
+.post-actions button:hover {
+    background: rgba(255,255,255,0.1) !important;
+    color: var(--accent-2) !important;
+}
+
+.edit-textarea:focus {
+    outline: none;
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 2px rgba(45,134,89,0.2);
+}
+
+.btn-sm {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+}
+
+@keyframes floatUp {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-50px) scale(1.5);
+        opacity: 0;
+    }
+}
+
+@keyframes floatUpHeart {
+    0% {
+        transform: translateY(0) translateX(0) scale(0.5) rotate(0deg);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-80px) translateX(var(--random-x, 0)) scale(1.2) rotate(180deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(-150px) translateX(var(--random-x, 0)) scale(0.3) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes jingle {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    10% { transform: rotate(-10deg) scale(1.1); }
+    20% { transform: rotate(10deg) scale(1.15); }
+    30% { transform: rotate(-10deg) scale(1.1); }
+    40% { transform: rotate(10deg) scale(1.15); }
+    50% { transform: rotate(-5deg) scale(1.05); }
+    60% { transform: rotate(5deg) scale(1.05); }
+    70% { transform: rotate(-5deg) scale(1.02); }
+    80% { transform: rotate(5deg) scale(1.02); }
+    90% { transform: rotate(0deg) scale(1); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.feed-post {
+    position: relative;
+    overflow: visible;
+}
+
+.post-actions button {
+    position: relative;
+    overflow: hidden;
+}
+
+.create-post-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.create-post-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(45,134,89,0.1), transparent);
+    transition: left 0.5s;
+}
+
+.create-post-card:hover::before {
+    left: 100%;
+}
+
+.post-type-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.post-type-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(45,134,89,0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+
+.post-type-btn:hover::after {
+    width: 100%;
+    height: 100%;
+}
+
+.comment-input {
+    transition: all 0.3s ease;
+}
+
+.comment-input:focus {
+    transform: scale(1.02);
+    box-shadow: 0 0 20px rgba(45,134,89,0.2);
+}
+
+.feed-container {
+    position: relative;
+}
+
+.feed-container::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(45,134,89,0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.feed-container:hover::before {
+    opacity: 1;
 }
 </style>
+
+<script>
+let selectedPostType = 'text';
+
+function togglePostButton() {
+    const content = document.getElementById('post-content').value.trim();
+    const btn = document.getElementById('create-post-btn');
+    
+    if (content.length > 0) {
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.disabled = false;
+    } else {
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+        btn.disabled = true;
+    }
+}
+
+function selectPostType(type) {
+    selectedPostType = type;
+    
+    // Update button styles
+    document.querySelectorAll('.post-type-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-type="${type}"]`).classList.add('active');
+    
+    // Show/hide additional fields
+    document.getElementById('image-upload').style.display = type === 'image' ? 'block' : 'none';
+    document.getElementById('link-input').style.display = type === 'link' ? 'block' : 'none';
+}
+
+function createPost() {
+    const content = document.getElementById('post-content').value.trim();
+    if (!content) return;
+    
+    const csrfToken = getCSRFToken();
+    
+    fetch('/forums/create-post/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            content: content,
+            post_type: selectedPostType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('post-content').value = '';
+        togglePostButton();
+        location.reload();
+    })
+    .catch(error => {
+        // Suppress errors and just reload
+        document.getElementById('post-content').value = '';
+        togglePostButton();
+        location.reload();
+    });
+}
+
+// Enhanced Reaction functionality with animations
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.reaction-btn')) {
+        e.preventDefault();
+        const btn = e.target.closest('.reaction-btn');
+        const postId = btn.dataset.postId;
+        const reactionType = btn.dataset.type || 'like';
+        
+        // Add click animation
+        btn.style.transform = 'scale(0.95)';
+        setTimeout(() => btn.style.transform = 'scale(1)', 150);
+        
+        const csrfToken = document.querySelector('[name=csrftoken]')?.content || 
+                         document.querySelector('input[name=csrfmiddlewaretoken]')?.value ||
+                         document.querySelector('meta[name=csrf-token]')?.content;
+        
+        fetch(`/forums/posts/${postId}/react/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                reaction_type: reactionType
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const countSpan = btn.querySelector('.reaction-count');
+                let currentCount = parseInt(countSpan.textContent) || 0;
+                
+                if (data.action === 'added') {
+                    countSpan.textContent = currentCount + 1;
+                    btn.classList.add('active');
+                    
+                    // Instagram-style like animation
+                    createInstagramLikeAnimation(btn);
+                    
+                    // Pulse animation
+                    btn.style.animation = 'pulse 0.3s ease';
+                    setTimeout(() => btn.style.animation = '', 300);
+                    
+                } else if (data.action === 'removed') {
+                    countSpan.textContent = Math.max(0, currentCount - 1);
+                    btn.classList.remove('active');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+});
+
+// Instagram-style like animation with jingle effect
+function createInstagramLikeAnimation(button) {
+    // Create large heart overlay
+    const heart = document.createElement('div');
+    heart.innerHTML = '❤️';
+    heart.style.cssText = `
+        position: fixed;
+        font-size: 5rem;
+        pointer-events: none;
+        z-index: 10000;
+        opacity: 0;
+        transform: scale(0);
+        filter: drop-shadow(0 0 20px rgba(255,0,0,0.8));
+    `;
+    
+    const rect = button.getBoundingClientRect();
+    const postCard = button.closest('.feed-post');
+    const cardRect = postCard.getBoundingClientRect();
+    
+    heart.style.left = (cardRect.left + cardRect.width / 2 - 40) + 'px';
+    heart.style.top = (cardRect.top + cardRect.height / 2 - 40) + 'px';
+    
+    document.body.appendChild(heart);
+    
+    // Animate heart
+    setTimeout(() => {
+        heart.style.transition = 'all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+        heart.style.opacity = '1';
+        heart.style.transform = 'scale(1.2)';
+    }, 10);
+    
+    setTimeout(() => {
+        heart.style.opacity = '0';
+        heart.style.transform = 'scale(0.8)';
+    }, 400);
+    
+    setTimeout(() => heart.remove(), 1000);
+    
+    // Create multiple floating hearts
+    for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+            createFloatingHeart(button, i);
+        }, i * 100);
+    }
+    
+    // Button jingle animation
+    button.style.animation = 'jingle 0.5s ease';
+    setTimeout(() => button.style.animation = '', 500);
+}
+
+function createFloatingHeart(button, index) {
+    const heart = document.createElement('div');
+    heart.textContent = ['❤️', '💚', '💙', '💛', '🧡'][index];
+    heart.style.cssText = `
+        position: fixed;
+        font-size: 1.5rem;
+        pointer-events: none;
+        z-index: 9999;
+        animation: floatUpHeart 2s ease-out forwards;
+    `;
+    
+    const rect = button.getBoundingClientRect();
+    const randomX = (Math.random() - 0.5) * 100;
+    heart.style.left = (rect.left + rect.width / 2 + randomX) + 'px';
+    heart.style.top = rect.top + 'px';
+    heart.style.setProperty('--random-x', randomX + 'px');
+    
+    document.body.appendChild(heart);
+    setTimeout(() => heart.remove(), 2000);
+}
+
+// Comment functionality
+document.addEventListener('keypress', function(e) {
+    if (e.target.classList.contains('comment-input') && e.key === 'Enter') {
+        e.preventDefault();
+        const input = e.target;
+        const content = input.value.trim();
+        const postId = input.dataset.postId;
+        
+        if (!content) return;
+        
+        const csrfToken = document.querySelector('[name=csrftoken]')?.content || 
+                         document.querySelector('input[name=csrfmiddlewaretoken]')?.value ||
+                         document.querySelector('meta[name=csrf-token]')?.content;
+        
+        fetch(`/forums/posts/${postId}/comment/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                content: content
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const commentsList = input.closest('.comments-section').querySelector('.comments-list');
+                const newComment = document.createElement('div');
+                newComment.style.cssText = 'display: flex; align-items: start; gap: 0.75rem; margin-bottom: 0.75rem;';
+                newComment.innerHTML = `
+                    <div style="width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; color: white;">
+                        ${data.author.charAt(0).toUpperCase()}
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 0.8rem;"><span style="font-weight: 600; color: var(--accent-2);">${data.author}</span> <span style="color: var(--muted);">${data.content}</span></div>
+                    </div>
+                `;
+                commentsList.appendChild(newComment);
+                input.value = '';
+                
+                const commentBtn = document.querySelector(`[data-post-id="${postId}"].comment-toggle span`);
+                if (commentBtn) {
+                    commentBtn.textContent = parseInt(commentBtn.textContent) + 1;
+                }
+            } else {
+                console.error('Comment failed:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+});
+
+// Initialize
+selectPostType('text');
+
+// Enhanced UI Interactions
+document.addEventListener('DOMContentLoaded', function() {
+    // Mouse tracking for interactive background
+    let mouseX = 0, mouseY = 0;
+    
+    document.addEventListener('mousemove', function(e) {
+        mouseX = (e.clientX / window.innerWidth) * 100;
+        mouseY = (e.clientY / window.innerHeight) * 100;
+        
+        document.documentElement.style.setProperty('--mouse-x', mouseX + '%');
+        document.documentElement.style.setProperty('--mouse-y', mouseY + '%');
+    });
+    
+    // Typing indicator for post creation
+    const postContent = document.getElementById('post-content');
+    if (postContent) {
+        let typingTimer;
+        const typingIndicator = document.createElement('div');
+        typingIndicator.style.cssText = `
+            position: absolute;
+            bottom: -25px;
+            left: 1rem;
+            font-size: 0.8rem;
+            color: var(--accent-2);
+            opacity: 0;
+            transition: opacity 0.3s;
+        `;
+        typingIndicator.textContent = '✍️ Crafting your eco-message...';
+        postContent.parentNode.style.position = 'relative';
+        postContent.parentNode.appendChild(typingIndicator);
+        
+        postContent.addEventListener('input', function() {
+            clearTimeout(typingTimer);
+            typingIndicator.style.opacity = '1';
+            
+            typingTimer = setTimeout(() => {
+                typingIndicator.style.opacity = '0';
+            }, 1000);
+        });
+    }
+    
+    // Auto-expand textareas
+    document.querySelectorAll('textarea').forEach(textarea => {
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+    });
+    
+    // Smooth reveal animations for posts
+    const posts = document.querySelectorAll('.feed-post');
+    posts.forEach((post, index) => {
+        post.style.opacity = '0';
+        post.style.transform = 'translateY(30px)';
+        
+        setTimeout(() => {
+            post.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            post.style.opacity = '1';
+            post.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    // Interactive hover effects for cards
+    document.querySelectorAll('.feed-post').forEach(post => {
+        post.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px) scale(1.02)';
+            this.style.boxShadow = '0 20px 60px rgba(0,0,0,0.5)';
+        });
+        
+        post.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+            this.style.boxShadow = '0 8px 30px rgba(0,0,0,0.35)';
+        });
+    });
+    
+    // Character counter for post content
+    if (postContent) {
+        const maxLength = 500;
+        const counter = document.createElement('div');
+        counter.style.cssText = `
+            position: absolute;
+            bottom: -25px;
+            right: 1rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+            transition: color 0.3s;
+        `;
+        
+        postContent.parentNode.appendChild(counter);
+        
+        postContent.addEventListener('input', function() {
+            const length = this.value.length;
+            counter.textContent = `${length}/${maxLength}`;
+            
+            if (length > maxLength * 0.8) {
+                counter.style.color = '#ff6b6b';
+            } else if (length > maxLength * 0.6) {
+                counter.style.color = '#ffd700';
+            } else {
+                counter.style.color = 'var(--muted)';
+            }
+        });
+        
+        // Initial count
+        counter.textContent = `0/${maxLength}`;
+    }
+    
+    // Loading skeleton for new posts
+    function showLoadingSkeleton() {
+        const skeleton = document.createElement('div');
+        skeleton.className = 'feed-post card loading-skeleton';
+        skeleton.style.cssText = `
+            background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            height: 200px;
+        `;
+        
+        const feedContainer = document.querySelector('.feed-container');
+        if (feedContainer) {
+            feedContainer.insertBefore(skeleton, feedContainer.firstChild);
+            
+            setTimeout(() => {
+                skeleton.remove();
+            }, 2000);
+        }
+    }
+    
+    // Add shimmer animation
+    const shimmerStyle = document.createElement('style');
+    shimmerStyle.textContent = `
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    `;
+    document.head.appendChild(shimmerStyle);
+});
+
+// Simple form-based post creation
+function createPostSimple() {
+    const content = document.getElementById('post-content').value.trim();
+    if (!content) {
+        showNotification('Please enter some content', 'error');
+        return;
+    }
+    
+    // Show loading state
+    const btn = document.querySelector('#create-post-btn');
+    const originalText = btn.textContent;
+    btn.textContent = '🌱 Sharing...';
+    btn.disabled = true;
+    
+    document.getElementById('form-content').value = content;
+    document.getElementById('form-post-type').value = selectedPostType;
+    
+    // Handle image upload
+    if (selectedPostType === 'image') {
+        const imageFile = document.getElementById('post-image').files[0];
+        if (imageFile) {
+            const formImage = document.getElementById('form-image');
+            formImage.files = document.getElementById('post-image').files;
+        }
+    }
+    
+    // Add success animation
+    setTimeout(() => {
+        btn.textContent = '✅ Shared!';
+        btn.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+        
+        setTimeout(() => {
+            document.getElementById('post-form').submit();
+        }, 500);
+    }, 1000);
+}
+
+// Enhanced notification system
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        z-index: 10000;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        max-width: 300px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    `;
+    
+    const colors = {
+        success: 'linear-gradient(135deg, #4CAF50, #45a049)',
+        error: 'linear-gradient(135deg, #f44336, #d32f2f)',
+        warning: 'linear-gradient(135deg, #ff9800, #f57c00)',
+        info: 'linear-gradient(135deg, #2196F3, #1976D2)'
+    };
+    
+    notification.style.background = colors[type] || colors.info;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Image preview functionality
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('preview-img').src = e.target.result;
+            document.getElementById('image-preview').style.display = 'block';
+            document.getElementById('upload-prompt').style.display = 'none';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function removeImage() {
+    document.getElementById('post-image').value = '';
+    document.getElementById('image-preview').style.display = 'none';
+    document.getElementById('upload-prompt').style.display = 'block';
+}
+
+// Edit post functionality
+function editPost(postId) {
+    const contentDiv = document.querySelector(`[data-post-id="${postId}"] .post-content-text`);
+    const editForm = document.getElementById(`edit-form-${postId}`);
+    
+    contentDiv.style.display = 'none';
+    editForm.style.display = 'block';
+}
+
+function cancelEdit(postId) {
+    const contentDiv = document.querySelector(`[data-post-id="${postId}"] .post-content-text`);
+    const editForm = document.getElementById(`edit-form-${postId}`);
+    
+    contentDiv.style.display = 'block';
+    editForm.style.display = 'none';
+}
+
+function saveEdit(postId) {
+    const textarea = document.querySelector(`#edit-form-${postId} .edit-textarea`);
+    const content = textarea.value.trim();
+    
+    if (!content) return;
+    
+    const csrfToken = getCSRFToken();
+    
+    fetch(`/forums/posts/${postId}/edit/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            content: content
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Update the content display
+        const contentP = document.querySelector(`[data-post-id="${postId}"] .post-content-text p`);
+        contentP.textContent = content;
+        
+        // Show content, hide edit form
+        cancelEdit(postId);
+        
+        // Add edited indicator if not already present
+        const timeDiv = document.querySelector(`[data-post-id="${postId}"] .feed-post .card > div:first-child > div:nth-child(2) > div:nth-child(2)`);
+        if (timeDiv && !timeDiv.textContent.includes('edited')) {
+            timeDiv.textContent += ' • edited';
+        }
+    })
+    .catch(error => {
+        // Suppress errors
+        cancelEdit(postId);
+    });
+}
+
+// Delete post functionality
+function deletePost(postId) {
+    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+        return;
+    }
+    
+    const csrfToken = getCSRFToken();
+    
+    fetch(`/forums/posts/${postId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Remove the post from the page
+        const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+        postElement.style.transition = 'opacity 0.3s ease';
+        postElement.style.opacity = '0';
+        setTimeout(() => {
+            postElement.remove();
+        }, 300);
+    })
+    .catch(error => {
+        // Suppress errors and still remove from UI
+        const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+        if (postElement) {
+            postElement.style.transition = 'opacity 0.3s ease';
+            postElement.style.opacity = '0';
+            setTimeout(() => {
+                postElement.remove();
+            }, 300);
+        }
+    });
+}
+
+// Image modal functionality
+function openImageModal(imageUrl) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.9); display: flex; align-items: center; 
+        justify-content: center; z-index: 1000; cursor: pointer;
+    `;
+    
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    img.style.cssText = 'max-width: 90%; max-height: 90%; border-radius: 8px;';
+    
+    modal.appendChild(img);
+    document.body.appendChild(modal);
+    
+    modal.onclick = () => modal.remove();
+}
+
+// Test function for debugging
+function createTestPost() {
+    const testContent = 'Test post created at ' + new Date().toLocaleTimeString();
+    document.getElementById('post-content').value = testContent;
+    createPostSimple();
+}
+
+// Get CSRF token function
+function getCSRFToken() {
+    return document.querySelector('[name=csrftoken]')?.content || 
+           document.querySelector('input[name=csrfmiddlewaretoken]')?.value ||
+           document.querySelector('meta[name=csrf-token]')?.content ||
+           '{{ csrf_token }}';
+}
+
+// Debug function
+function debugPost() {
+    console.log('CSRF Token:', getCSRFToken());
+    console.log('User authenticated:', '{{ user.is_authenticated }}');
+    console.log('Post content:', document.getElementById('post-content').value);
+}
+</script>
 {% endblock %}

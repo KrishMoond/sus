@@ -1,20 +1,13 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Home - Sustainability Hub{% endblock %}
+{% block title %}{% if user.is_authenticated %}Dashboard{% else %}Home{% endif %} - EcoConnect{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* Hero Section Animation */
     @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     
     @keyframes pulse {
@@ -22,271 +15,432 @@
         50% { transform: scale(1.05); }
     }
     
-    @keyframes float {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-    }
-    
-    .hero-section {
-        animation: fadeInUp 0.8s ease-out;
-        text-align: center;
-        padding: 4rem 2rem;
-        background: linear-gradient(135deg, rgba(45,134,89,0.15), rgba(35,139,78,0.1));
-        border: 1px solid rgba(45,134,89,0.2);
-        border-radius: 20px;
-        margin-bottom: 3rem;
-    }
-    
-    .stat-card {
-        animation: fadeInUp 0.6s ease-out;
-        animation-fill-mode: both;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .stat-card:nth-child(1) { animation-delay: 0.1s; }
-    .stat-card:nth-child(2) { animation-delay: 0.2s; }
-    .stat-card:nth-child(3) { animation-delay: 0.3s; }
-    .stat-card:nth-child(4) { animation-delay: 0.4s; }
-    
-    .stat-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 12px 40px rgba(45,134,89,0.3);
-    }
-    
-    .feature-card {
+    .dashboard-card {
         transition: all 0.3s ease;
         cursor: pointer;
     }
     
-    .feature-card:hover {
-        transform: translateY(-6px) scale(1.02);
-        box-shadow: 0 14px 48px rgba(0,0,0,0.5);
+    .dashboard-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.4);
     }
     
-    .counter {
-        font-size: 2.5rem;
+    .stat-number {
+        font-size: 2rem;
         font-weight: bold;
         color: var(--accent-2);
-        display: inline-block;
     }
     
-    .trending-item {
-        animation: fadeInUp 0.5s ease-out;
-        animation-fill-mode: both;
+    .activity-item {
+        padding: 1rem;
+        background: rgba(255,255,255,0.03);
+        border-radius: 8px;
+        border-left: 3px solid var(--accent);
+        margin-bottom: 0.75rem;
+        transition: background 0.2s;
     }
     
-    .trending-item:nth-child(1) { animation-delay: 0.1s; }
-    .trending-item:nth-child(2) { animation-delay: 0.2s; }
-    .trending-item:nth-child(3) { animation-delay: 0.3s; }
+    .activity-item:hover {
+        background: rgba(255,255,255,0.06);
+    }
+    
+    .notification-badge {
+        position: absolute;
+        top: -6px;
+        right: -8px;
+        background: var(--accent-2);
+        color: var(--bg-900);
+        padding: 0.15rem 0.4rem;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: bold;
+    }
     
     @media (prefers-reduced-motion: reduce) {
-        .hero-section,
-        .stat-card,
-        .feature-card,
-        .trending-item {
-            animation: none;
-        }
+        * { animation: none !important; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<div class="hero-section">
-    <h1 style="font-size: 3.5rem; margin: 0 0 1rem 0; color: var(--accent-2); font-weight: 800; text-shadow: 0 4px 20px rgba(45,134,89,0.3);">
-        🌱 Welcome to Sustainability Hub
-    </h1>
-    <p style="font-size: 1.4rem; color: rgba(255,255,255,0.9); margin: 0 0 2rem 0; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.6;">
-        Connect, collaborate, and make a difference for our planet. Join thousands of activists working together for a sustainable future.
-    </p>
-    {% if not user.is_authenticated %}
+
+{% if not user.is_authenticated %}
+    <!-- GUEST USER EXPERIENCE -->
+    <div style="text-align: center; padding: 4rem 2rem; background: linear-gradient(135deg, rgba(45,134,89,0.15), rgba(35,139,78,0.1)); border: 1px solid rgba(45,134,89,0.2); border-radius: 20px; margin-bottom: 3rem;">
+        <h1 style="font-size: 3.5rem; margin: 0 0 1rem 0; color: var(--accent-2); font-weight: 800; text-shadow: 0 4px 20px rgba(45,134,89,0.3);">
+            🌱 Welcome to EcoConnect
+        </h1>
+        <p style="font-size: 1.4rem; color: rgba(255,255,255,0.9); margin: 0 0 2rem 0; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+            Connect, collaborate, and make a difference for our planet. Join {{ stats.total_users }} activists working together for a sustainable future.
+        </p>
         <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
             <a href="{% url 'register' %}" class="btn" style="padding: 1rem 2.5rem; font-size: 1.1rem; animation: pulse 2s infinite;">Get Started Free</a>
             <a href="{% url 'login' %}" class="btn btn-secondary" style="padding: 1rem 2.5rem; font-size: 1.1rem;">Login</a>
         </div>
+    </div>
+
+{% elif user.is_superuser %}
+    <!-- ADMIN DASHBOARD -->
+    {% if user_warnings_count > 0 %}
+    <div class="card" style="background: rgba(255,193,7,0.1); border: 2px solid rgba(255,193,7,0.4); margin-bottom: 2rem; padding: 1.5rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="font-size: 2.5rem;">⚠️</div>
+                <div>
+                    <h3 style="color: #ffc107; margin: 0 0 0.25rem 0;">You have {{ user_warnings_count }} active warning{{ user_warnings_count|pluralize }}</h3>
+                    <p style="color: var(--muted); margin: 0;">Please review your warnings and follow community guidelines</p>
+                </div>
+            </div>
+            <a href="{% url 'accounts:my_warnings' %}" class="btn" style="background: linear-gradient(135deg, #ffc107, #ffb300); color: #000; font-weight: 700;">View Warnings</a>
+        </div>
+    </div>
     {% endif %}
-</div>
-
-<!-- Statistics Section -->
-<div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin: 3rem 0;">
-    <div class="card stat-card" style="text-align: center; padding: 2rem;">
-        <div class="counter" data-count="{{ stats.total_projects }}">0</div>
-        <div style="color: var(--muted); font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem;">Active Projects</div>
-    </div>
-    <div class="card stat-card" style="text-align: center; padding: 2rem;">
-        <div class="counter" data-count="{{ stats.total_topics }}">0</div>
-        <div style="color: var(--muted); font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem;">Forum Discussions</div>
-    </div>
-    <div class="card stat-card" style="text-align: center; padding: 2rem;">
-        <div class="counter" data-count="{{ stats.total_events }}">0</div>
-        <div style="color: var(--muted); font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem;">Events Organized</div>
-    </div>
-    <div class="card stat-card" style="text-align: center; padding: 2rem;">
-        <div class="counter" data-count="{{ stats.total_resources }}">0</div>
-        <div style="color: var(--muted); font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem;">Resources Shared</div>
-    </div>
-</div>
-
-<!-- Main Features Grid -->
-<div class="grid" style="margin: 3rem 0;">
-    <div class="card feature-card" style="position: relative; overflow: hidden;">
-        <div style="font-size: 4rem; margin-bottom: 1rem; animation: float 3s ease-in-out infinite;">🌿</div>
-        <h2 style="margin: 0 0 1rem 0; color: var(--accent-2); font-size: 1.8rem;">Forums</h2>
-        <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem; line-height: 1.7;">
-            Join discussions about sustainability, share ideas, and learn from others in our vibrant community.
-        </p>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="color: var(--accent-2); margin: 0;">🛡️ Admin Dashboard - {{ user.username }}</h1>
+            <p style="color: var(--muted); margin: 0.5rem 0 0 0;">Platform oversight + your member activities</p>
+        </div>
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-            <a href="{% url 'forums:topics' %}" class="btn">Browse Forums</a>
-            {% if user.is_authenticated %}
-                <a href="{% url 'forums:topic_create' %}" class="btn btn-secondary">Start Discussion</a>
-            {% endif %}
+            <a href="{% url 'projects:create' %}" class="btn" style="padding: 0.75rem 1.5rem;">🚀 New Project</a>
+            <a href="{% url 'events:create' %}" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">📅 Create Event</a>
         </div>
     </div>
     
-    <div class="card feature-card" style="position: relative; overflow: hidden;">
-        <div style="font-size: 4rem; margin-bottom: 1rem; animation: float 3s ease-in-out infinite; animation-delay: 0.5s;">🚀</div>
-        <h2 style="margin: 0 0 1rem 0; color: var(--accent-2); font-size: 1.8rem;">Projects</h2>
-        <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem; line-height: 1.7;">
-            Collaborate on sustainability projects, track progress, and make real-world impact together.
-        </p>
-        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-            <a href="{% url 'projects:list' %}" class="btn">View Projects</a>
-            {% if user.is_authenticated %}
-                <a href="{% url 'projects:create' %}" class="btn btn-secondary">Create Project</a>
-            {% endif %}
+    <!-- Combined Stats: Admin + Personal -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div class="card dashboard-card" style="padding: 1.25rem; text-align: center; border-left: 4px solid #ffd700;">
+            <div class="stat-number">{{ admin_stats.pending_reports }}</div>
+            <div style="color: var(--muted); margin-top: 0.25rem; font-size: 0.9rem;">Pending Reports</div>
+        </div>
+        <div class="card dashboard-card" style="padding: 1.25rem; text-align: center; border-left: 4px solid var(--accent);">
+            <div class="stat-number">{{ user_stats.projects_created }}</div>
+            <div style="color: var(--muted); margin-top: 0.25rem; font-size: 0.9rem;">My Projects</div>
+        </div>
+        <div class="card dashboard-card" style="padding: 1.25rem; text-align: center; border-left: 4px solid #17a2b8;">
+            <div class="stat-number">{{ user_stats.events_attending }}</div>
+            <div style="color: var(--muted); margin-top: 0.25rem; font-size: 0.9rem;">Events Attending</div>
+        </div>
+        <div class="card dashboard-card" style="padding: 1.25rem; text-align: center; border-left: 4px solid #28a745;">
+            <div class="stat-number">{{ admin_stats.new_users_today }}</div>
+            <div style="color: var(--muted); margin-top: 0.25rem; font-size: 0.9rem;">New Users Today</div>
+        </div>
+        <div class="card dashboard-card" style="padding: 1.25rem; text-align: center; border-left: 4px solid #ffc107;">
+            <div class="stat-number">{{ user_stats.forum_posts }}</div>
+            <div style="color: var(--muted); margin-top: 0.25rem; font-size: 0.9rem;">My Forum Posts</div>
         </div>
     </div>
     
-    <div class="card feature-card" style="position: relative; overflow: hidden;">
-        <div style="font-size: 4rem; margin-bottom: 1rem; animation: float 3s ease-in-out infinite; animation-delay: 1s;">📅</div>
-        <h2 style="margin: 0 0 1rem 0; color: var(--accent-2); font-size: 1.8rem;">Events</h2>
-        <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem; line-height: 1.7;">
-            Discover and participate in sustainability events in your area. Connect with like-minded people.
-        </p>
-        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-            <a href="{% url 'events:list' %}" class="btn">Find Events</a>
-            {% if user.is_authenticated %}
-                <a href="{% url 'events:create' %}" class="btn btn-secondary">Organize Event</a>
-            {% endif %}
-        </div>
-    </div>
-    
-    <div class="card feature-card" style="position: relative; overflow: hidden;">
-        <div style="font-size: 4rem; margin-bottom: 1rem; animation: float 3s ease-in-out infinite; animation-delay: 1.5s;">📚</div>
-        <h2 style="margin: 0 0 1rem 0; color: var(--accent-2); font-size: 1.8rem;">Resources</h2>
-        <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem; line-height: 1.7;">
-            Access valuable resources, articles, and tools for sustainable living and environmental action.
-        </p>
-        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-            <a href="{% url 'resources:list' %}" class="btn">Browse Resources</a>
-            {% if user.is_authenticated %}
-                <a href="{% url 'resources:create' %}" class="btn btn-secondary">Share Resource</a>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-{% if user.is_authenticated %}
-    <!-- Quick Actions Section -->
-    <div class="card" style="margin: 3rem 0;">
-        <h2 style="margin-bottom: 1.5rem; color: var(--accent-2); display: flex; align-items: center; gap: 0.5rem;">
-            ⚡ Quick Actions
-        </h2>
+    <!-- Admin Quick Actions -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="color: var(--accent-2); margin-bottom: 1rem;">⚡ Admin Controls</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-            <a href="{% url 'forums:topic_create' %}" class="btn" style="padding: 1rem; text-align: center;">💬 Start Discussion</a>
-            <a href="{% url 'projects:create' %}" class="btn" style="padding: 1rem; text-align: center;">🚀 Create Project</a>
-            <a href="{% url 'events:create' %}" class="btn" style="padding: 1rem; text-align: center;">📅 Organize Event</a>
-            <a href="{% url 'resources:create' %}" class="btn" style="padding: 1rem; text-align: center;">📚 Share Resource</a>
+            <a href="{% url 'accounts:admin_users' %}" class="btn" style="padding: 1rem; text-align: center;">👥 Manage Users</a>
+            <a href="{% url 'rms:admin_reports' %}" class="btn" style="padding: 1rem; text-align: center;">📋 Review Reports</a>
+            <a href="/admin/" class="btn btn-secondary" style="padding: 1rem; text-align: center;">⚙️ Django Admin</a>
+        </div>
+    </div>
+
+{% else %}
+    <!-- REGULAR USER DASHBOARD -->
+    {% if user_warnings_count > 0 %}
+    <div class="card" style="background: rgba(255,193,7,0.1); border: 2px solid rgba(255,193,7,0.4); margin-bottom: 2rem; padding: 1.5rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="font-size: 2.5rem;">⚠️</div>
+                <div>
+                    <h3 style="color: #ffc107; margin: 0 0 0.25rem 0;">You have {{ user_warnings_count }} active warning{{ user_warnings_count|pluralize }}</h3>
+                    <p style="color: var(--muted); margin: 0;">Please review your warnings and follow community guidelines</p>
+                </div>
+            </div>
+            <a href="{% url 'accounts:my_warnings' %}" class="btn" style="background: linear-gradient(135deg, #ffc107, #ffb300); color: #000; font-weight: 700;">View Warnings</a>
+        </div>
+    </div>
+    {% endif %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="color: var(--accent-2); margin: 0;">Welcome back, {{ user.username }}! 👋</h1>
+            <p style="color: var(--muted); margin: 0.5rem 0 0 0;">Ready to make a positive impact today?</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{% url 'projects:create' %}" class="btn" style="padding: 0.75rem 1.5rem;">🚀 New Project</a>
+            <a href="{% url 'events:create' %}" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">📅 Create Event</a>
         </div>
     </div>
     
-    <!-- User Statistics -->
-    {% if user_stats %}
-    <div class="card" style="margin: 3rem 0;">
-        <h2 style="margin-bottom: 1.5rem; color: var(--accent-2);">Your Impact</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem;">
-            <div style="text-align: center; padding: 1.5rem; background: rgba(45,134,89,0.1); border-radius: 12px;">
-                <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-2);">{{ user_stats.projects_created }}</div>
-                <div style="color: var(--muted); margin-top: 0.5rem;">Projects Created</div>
-            </div>
-            <div style="text-align: center; padding: 1.5rem; background: rgba(45,134,89,0.1); border-radius: 12px;">
-                <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-2);">{{ user_stats.projects_joined }}</div>
-                <div style="color: var(--muted); margin-top: 0.5rem;">Projects Joined</div>
-            </div>
-            <div style="text-align: center; padding: 1.5rem; background: rgba(45,134,89,0.1); border-radius: 12px;">
-                <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-2);">{{ user_stats.topics_started }}</div>
-                <div style="color: var(--muted); margin-top: 0.5rem;">Discussions Started</div>
-            </div>
+    <!-- Personal Stats -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div class="card dashboard-card" style="padding: 1.25rem; text-align: center; border-left: 4px solid var(--accent);">
+            <div class="stat-number">{{ user_stats.projects_created }}</div>
+            <div style="color: var(--muted); margin-top: 0.25rem; font-size: 0.9rem;">Projects Created</div>
+        </div>
+        <div class="card dashboard-card" style="padding: 1.25rem; text-align: center; border-left: 4px solid #17a2b8;">
+            <div class="stat-number">{{ user_stats.projects_joined }}</div>
+            <div style="color: var(--muted); margin-top: 0.25rem; font-size: 0.9rem;">Projects Joined</div>
+        </div>
+        <div class="card dashboard-card" style="padding: 1.25rem; text-align: center; border-left: 4px solid #28a745;">
+            <div class="stat-number">{{ user_stats.topics_created }}</div>
+            <div style="color: var(--muted); margin-top: 0.25rem; font-size: 0.9rem;">Discussions Started</div>
+        </div>
+        <div class="card dashboard-card" style="padding: 1.25rem; text-align: center; border-left: 4px solid #ffc107;">
+            <div class="stat-number">{{ user_stats.forum_posts }}</div>
+            <div style="color: var(--muted); margin-top: 0.25rem; font-size: 0.9rem;">Forum Posts</div>
         </div>
     </div>
-    {% endif %}
 {% endif %}
 
-<!-- Recent Content Sections - Only for authenticated users -->
-{% if user.is_authenticated %}
-    {% if recent_projects or recent_topics or upcoming_events %}
+{% if not user.is_authenticated %}
+    <!-- Platform Statistics for Guests -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 3rem 0;">
+        <div class="card" style="text-align: center; padding: 2rem; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-8px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-2);">{{ stats.total_projects }}</div>
+            <div style="color: var(--muted); font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem;">Active Projects</div>
+        </div>
+        <div class="card" style="text-align: center; padding: 2rem; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-8px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-2);">{{ stats.total_topics }}</div>
+            <div style="color: var(--muted); font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem;">Forum Discussions</div>
+        </div>
+        <div class="card" style="text-align: center; padding: 2rem; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-8px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-2);">{{ stats.total_events }}</div>
+            <div style="color: var(--muted); font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem;">Events Organized</div>
+        </div>
+        <div class="card" style="text-align: center; padding: 2rem; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-8px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-2);">{{ stats.total_users }}</div>
+            <div style="color: var(--muted); font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem;">Community Members</div>
+        </div>
+    </div>
+{% endif %}
+
+{% if not user.is_authenticated %}
+    <!-- Feature Overview for Guests -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin: 3rem 0;">
-        {% if recent_projects %}
+        <div class="card" style="padding: 2rem; transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.transform='translateY(-6px) scale(1.02)'; this.style.boxShadow='0 14px 48px rgba(0,0,0,0.5)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.35)'">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🌿</div>
+            <h2 style="margin: 0 0 1rem 0; color: var(--accent-2); font-size: 1.8rem;">Forums</h2>
+            <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem; line-height: 1.7;">Join discussions about sustainability, share ideas, and learn from others in our vibrant community.</p>
+            <a href="{% url 'forums:topics' %}" class="btn">Browse Forums</a>
+        </div>
+        
+        <div class="card" style="padding: 2rem; transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.transform='translateY(-6px) scale(1.02)'; this.style.boxShadow='0 14px 48px rgba(0,0,0,0.5)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.35)'">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🚀</div>
+            <h2 style="margin: 0 0 1rem 0; color: var(--accent-2); font-size: 1.8rem;">Projects</h2>
+            <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem; line-height: 1.7;">Collaborate on sustainability projects, track progress, and make real-world impact together.</p>
+            <a href="{% url 'projects:list' %}" class="btn">View Projects</a>
+        </div>
+        
+        <div class="card" style="padding: 2rem; transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.transform='translateY(-6px) scale(1.02)'; this.style.boxShadow='0 14px 48px rgba(0,0,0,0.5)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 8px 30px rgba(0,0,0,0.35)'">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">📅</div>
+            <h2 style="margin: 0 0 1rem 0; color: var(--accent-2); font-size: 1.8rem;">Events</h2>
+            <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem; line-height: 1.7;">Discover and participate in sustainability events in your area. Connect with like-minded people.</p>
+            <a href="{% url 'events:list' %}" class="btn">Find Events</a>
+        </div>
+    </div>
+{% endif %}
+
+{% if user.is_authenticated and not user.is_superuser %}
+    <!-- REGULAR USER CONTENT -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
+        
+        <!-- Recommendations -->
+        {% if recommended_projects %}
         <div class="card">
-            <h3 style="margin-bottom: 1.5rem; color: var(--accent-2); display: flex; align-items: center; gap: 0.5rem;">
-                🚀 Recent Projects
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🎯</span> Recommended Projects
             </h3>
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                {% for project in recent_projects %}
-                    <div class="trending-item" style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 3px solid var(--accent); transition: transform 0.2s;">
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for project in recommended_projects %}
+                    <div class="activity-item">
                         <a href="{% url 'projects:detail' pk=project.pk %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600; display: block; margin-bottom: 0.5rem;">{{ project.title }}</a>
-                        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.5rem 0;">by <a href="{% url 'profiles:detail' username=project.creator.username %}" style="color: var(--accent-2);">{{ project.creator.username }}</a></p>
-                        <span style="color: var(--muted); font-size: 0.85rem;">{{ project.created_at|timesince }} ago</span>
+                        <div style="color: var(--muted); font-size: 0.85rem;">by {{ project.creator.username }} • {{ project.get_status_display }}</div>
                     </div>
                 {% endfor %}
-                <a href="{% url 'projects:list' %}" class="btn btn-secondary" style="margin-top: 0.5rem;">View All Projects →</a>
             </div>
+            <a href="{% url 'projects:list' %}" class="btn btn-secondary" style="margin-top: 1rem; width: 100%; text-align: center;">View All Projects</a>
         </div>
         {% endif %}
         
-        {% if recent_topics %}
+        <!-- Trending Discussions -->
+        {% if trending_topics %}
         <div class="card">
-            <h3 style="margin-bottom: 1.5rem; color: var(--accent-2); display: flex; align-items: center; gap: 0.5rem;">
-                💬 Trending Discussions
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🔥</span> Trending Discussions
             </h3>
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                {% for topic in recent_topics %}
-                    <div class="trending-item" style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 3px solid var(--accent); transition: transform 0.2s;">
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for topic in trending_topics %}
+                    <div class="activity-item">
                         <a href="{% url 'forums:topic_detail' pk=topic.pk %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600; display: block; margin-bottom: 0.5rem;">{{ topic.title }}</a>
-                        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.5rem 0;">
-                            by <a href="{% url 'profiles:detail' username=topic.author.username %}" style="color: var(--accent-2);">{{ topic.author.username }}</a>
-                            {% if topic.post_count %} • {{ topic.post_count }} replies{% endif %}
-                        </p>
-                        <span style="color: var(--muted); font-size: 0.85rem;">{{ topic.created_at|timesince }} ago</span>
+                        <div style="color: var(--muted); font-size: 0.85rem;">{{ topic.engagement }} interactions • {{ topic.created_at|timesince }} ago</div>
                     </div>
                 {% endfor %}
-                <a href="{% url 'forums:topics' %}" class="btn btn-secondary" style="margin-top: 0.5rem;">View All Discussions →</a>
             </div>
+            <a href="{% url 'forums:topics' %}" class="btn btn-secondary" style="margin-top: 1rem; width: 100%; text-align: center;">Join Discussions</a>
         </div>
         {% endif %}
         
-        {% if upcoming_events %}
+        <!-- Upcoming Events -->
+        {% if recommended_events %}
         <div class="card">
-            <h3 style="margin-bottom: 1.5rem; color: var(--accent-2); display: flex; align-items: center; gap: 0.5rem;">
-                📅 Upcoming Events
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>📅</span> Upcoming Events
             </h3>
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                {% for event in upcoming_events %}
-                    <div class="trending-item" style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 3px solid var(--accent); transition: transform 0.2s;">
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for event in recommended_events %}
+                    <div class="activity-item">
                         <a href="{% url 'events:detail' pk=event.pk %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600; display: block; margin-bottom: 0.5rem;">{{ event.title }}</a>
-                        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.5rem 0;">
-                            📍 {{ event.location }} • {{ event.start_date|date:"M d, Y" }}
-                        </p>
-                        <span style="color: var(--muted); font-size: 0.85rem;">{{ event.start_date|timesince }} from now</span>
+                        <div style="color: var(--muted); font-size: 0.85rem;">📍 {{ event.location }} • {{ event.start_date|date:"M d, Y" }}</div>
                     </div>
                 {% endfor %}
-                <a href="{% url 'events:list' %}" class="btn btn-secondary" style="margin-top: 0.5rem;">View All Events →</a>
+            </div>
+            <a href="{% url 'events:list' %}" class="btn btn-secondary" style="margin-top: 1rem; width: 100%; text-align: center;">Browse Events</a>
+        </div>
+        {% endif %}
+        
+        <!-- Enhanced Notifications -->
+        {% if pending_notifications %}
+        <div class="card notification-card" style="background: linear-gradient(135deg, rgba(255,193,7,0.08), rgba(255,215,0,0.05)); border: 1px solid rgba(255,193,7,0.2); position: relative; overflow: hidden;">
+            <div class="notification-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h3 style="color: #ffd700; margin: 0; display: flex; align-items: center; gap: 0.75rem; font-size: 1.1rem;">
+                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #ffc107, #ffb300); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 4px 12px rgba(255,193,7,0.3);">
+                        🔔
+                    </div>
+                    <span>Recent Notifications</span>
+                </h3>
+                <div class="notification-count" style="background: linear-gradient(135deg, #ff6b6b, #ee5a52); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; box-shadow: 0 2px 8px rgba(255,107,107,0.3);">
+                    {{ pending_notifications|length }} new
+                </div>
+            </div>
+            
+            <div class="notifications-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for notification in pending_notifications %}
+                    <div class="notification-item" style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 3px solid #ffc107; position: relative; transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.background='rgba(255,193,7,0.1)'; this.style.transform='translateX(4px)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.transform='translateX(0)'">
+                        <div class="notification-content">
+                            <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                <div style="width: 8px; height: 8px; background: #ffc107; border-radius: 50%; margin-top: 0.5rem; box-shadow: 0 0 8px rgba(255,193,7,0.6);"></div>
+                                <div style="flex: 1;">
+                                    <div style="color: #fff3cd; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">{{ notification.title }}</div>
+                                    <div style="color: rgba(255,255,255,0.85); font-size: 0.85rem; line-height: 1.4; margin-bottom: 0.5rem;">{{ notification.message }}</div>
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div style="color: rgba(255,255,255,0.6); font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+                                            <span>🕰️</span> {{ notification.created_at|timesince }} ago
+                                        </div>
+                                        <button class="mark-read-btn" style="background: transparent; border: 1px solid rgba(255,193,7,0.3); color: #ffc107; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,193,7,0.2)'" onmouseout="this.style.background='transparent'">
+                                            Mark as read
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+                <a href="{% url 'notifications:list' %}" class="btn" style="flex: 1; text-align: center; background: linear-gradient(135deg, #ffc107, #ffb300); color: #000; font-weight: 700; box-shadow: 0 4px 12px rgba(255,193,7,0.3);">
+                    View All Notifications
+                </a>
+                <button class="mark-all-read" style="padding: 0.65rem 1.25rem; background: transparent; border: 1px solid rgba(255,193,7,0.3); color: #ffc107; border-radius: 12px; cursor: pointer; transition: all 0.2s; font-weight: 600;" onmouseover="this.style.background='rgba(255,193,7,0.1)'" onmouseout="this.style.background='transparent'">
+                    Mark All Read
+                </button>
             </div>
         </div>
         {% endif %}
     </div>
-    {% endif %}
+    
+    <!-- Community Highlights (for both regular users and admins) -->
+    <div class="card" style="margin-top: 2rem; background: linear-gradient(135deg, rgba(45,134,89,0.1), rgba(35,139,78,0.05)); border: 1px solid rgba(45,134,89,0.2);">
+        <h3 style="color: var(--accent-2); margin-bottom: 1rem; text-align: center;">🌟 This Week in Our Community</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; text-align: center;">
+            <div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: var(--accent-2);">{{ community_highlights.new_members }}</div>
+                <div style="color: var(--muted); font-size: 0.9rem;">New Members</div>
+            </div>
+            <div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: var(--accent-2);">{{ community_highlights.active_projects }}</div>
+                <div style="color: var(--muted); font-size: 0.9rem;">Active Projects</div>
+            </div>
+            <div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: var(--accent-2);">{{ community_highlights.recent_events }}</div>
+                <div style="color: var(--muted); font-size: 0.9rem;">New Events</div>
+            </div>
+        </div>
+    </div>
+
+{% elif user.is_superuser %}
+    <!-- ADMIN CONTENT: Both Admin Tasks + Member Participation -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
+        
+        <!-- Admin Reports -->
+        {% if recent_reports %}
+        <div class="card" style="border-left: 4px solid #dc3545;">
+            <h3 style="color: #dc3545; margin-bottom: 1rem;">🚨 Recent Reports</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for report in recent_reports %}
+                    <div style="padding: 1rem; background: rgba(220,53,69,0.1); border-radius: 8px;">
+                        <a href="{% url 'rms:admin_reports' %}" style="color: #ffb3b3; text-decoration: none; font-weight: 600; display: block; margin-bottom: 0.5rem;">{{ report.subject }}</a>
+                        <div style="color: rgba(255,255,255,0.8); font-size: 0.85rem;">{{ report.get_category_display }} • {{ report.created_at|timesince }} ago</div>
+                    </div>
+                {% endfor %}
+            </div>
+            <a href="{% url 'rms:admin_reports' %}" class="btn btn-danger" style="margin-top: 1rem; width: 100%; text-align: center;">Review All Reports</a>
+        </div>
+        {% endif %}
+        
+        <!-- Recommended Projects (Admin as Member) -->
+        {% if recommended_projects %}
+        <div class="card">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🎯</span> Projects to Join
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for project in recommended_projects %}
+                    <div class="activity-item">
+                        <a href="{% url 'projects:detail' pk=project.pk %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600; display: block; margin-bottom: 0.5rem;">{{ project.title }}</a>
+                        <div style="color: var(--muted); font-size: 0.85rem;">by {{ project.creator.username }} • {{ project.get_status_display }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+            <a href="{% url 'projects:list' %}" class="btn btn-secondary" style="margin-top: 1rem; width: 100%; text-align: center;">View All Projects</a>
+        </div>
+        {% endif %}
+        
+        <!-- Upcoming Events (Admin as Member) -->
+        {% if recommended_events %}
+        <div class="card">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>📅</span> Events to Attend
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for event in recommended_events %}
+                    <div class="activity-item">
+                        <a href="{% url 'events:detail' pk=event.pk %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600; display: block; margin-bottom: 0.5rem;">{{ event.title }}</a>
+                        <div style="color: var(--muted); font-size: 0.85rem;">📍 {{ event.location }} • {{ event.start_date|date:"M d, Y" }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+            <a href="{% url 'events:list' %}" class="btn btn-secondary" style="margin-top: 1rem; width: 100%; text-align: center;">Browse Events</a>
+        </div>
+        {% endif %}
+        
+        <!-- Trending Discussions -->
+        {% if trending_topics %}
+        <div class="card">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🔥</span> Trending Discussions
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for topic in trending_topics %}
+                    <div class="activity-item">
+                        <a href="{% url 'forums:topic_detail' pk=topic.pk %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600; display: block; margin-bottom: 0.5rem;">{{ topic.title }}</a>
+                        <div style="color: var(--muted); font-size: 0.85rem;">{{ topic.engagement }} interactions • {{ topic.created_at|timesince }} ago</div>
+                    </div>
+                {% endfor %}
+            </div>
+            <a href="{% url 'forums:topics' %}" class="btn btn-secondary" style="margin-top: 1rem; width: 100%; text-align: center;">Join Discussions</a>
+        </div>
+        {% endif %}
+    </div>
 {% endif %}
+
+
 
 {% if not user.is_authenticated %}
 <!-- About Us & Mission for Guests -->
@@ -338,57 +492,298 @@
 {% endif %}
 
 <script>
-    // Animated Counter
-    function animateCounter(element) {
-        const target = parseInt(element.getAttribute('data-count'));
-        const duration = 2000;
-        const step = target / (duration / 16);
+// Enhanced Interactive Dashboard System
+(function() {
+    // Animated Counter Effect
+    function animateCounter(element, target) {
         let current = 0;
-        
+        const increment = target / 50;
         const timer = setInterval(() => {
-            current += step;
+            current += increment;
             if (current >= target) {
                 element.textContent = target;
                 clearInterval(timer);
             } else {
                 element.textContent = Math.floor(current);
             }
-        }, 16);
+        }, 30);
     }
     
-    // Intersection Observer for animations
+    // Initialize counters with animation
+    document.querySelectorAll('.stat-number').forEach(counter => {
+        const target = parseInt(counter.textContent);
+        counter.textContent = '0';
+        
+        // Use Intersection Observer to trigger animation when visible
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateCounter(counter, target);
+                    observer.unobserve(entry.target);
+                }
+            });
+        });
+        
+        observer.observe(counter);
+    });
+    
+    // Enhanced Dashboard Card Interactions
+    document.querySelectorAll('.dashboard-card').forEach(card => {
+        // Add click ripple effect
+        card.addEventListener('click', function(e) {
+            const ripple = document.createElement('span');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+                background: rgba(45,134,89,0.3);
+                border-radius: 50%;
+                transform: scale(0);
+                animation: ripple 0.6s ease-out;
+                pointer-events: none;
+            `;
+            
+            this.style.position = 'relative';
+            this.style.overflow = 'hidden';
+            this.appendChild(ripple);
+            
+            setTimeout(() => ripple.remove(), 600);
+        });
+        
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px) scale(1.02)';
+            this.style.boxShadow = '0 20px 60px rgba(0,0,0,0.5)';
+            
+            // Add glow effect
+            this.style.boxShadow += ', 0 0 30px rgba(45,134,89,0.2)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+            this.style.boxShadow = '0 8px 30px rgba(0,0,0,0.35)';
+        });
+    });
+    
+    // Interactive Activity Items with Hover Effects
+    document.querySelectorAll('.activity-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.background = 'rgba(45,134,89,0.1)';
+            this.style.transform = 'translateX(8px)';
+            this.style.borderLeftColor = 'var(--accent-2)';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.background = 'rgba(255,255,255,0.03)';
+            this.style.transform = 'translateX(0)';
+            this.style.borderLeftColor = 'var(--accent)';
+        });
+    });
+    
+    // Enhanced Notification System
+    document.querySelectorAll('.mark-read-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const notificationItem = this.closest('.notification-item');
+            
+            // Success animation
+            this.textContent = '✓ Read';
+            this.style.background = 'rgba(45,134,89,0.3)';
+            this.style.borderColor = 'var(--accent)';
+            
+            setTimeout(() => {
+                notificationItem.style.transition = 'all 0.5s ease';
+                notificationItem.style.opacity = '0.3';
+                notificationItem.style.transform = 'translateX(-20px) scale(0.95)';
+                notificationItem.style.filter = 'grayscale(1)';
+            }, 300);
+        });
+    });
+    
+    // Mark All Read with Staggered Animation
+    const markAllBtn = document.querySelector('.mark-all-read');
+    if (markAllBtn) {
+        markAllBtn.addEventListener('click', function() {
+            const notificationItems = document.querySelectorAll('.notification-item');
+            
+            // Button feedback
+            this.textContent = 'Marking...';
+            this.style.opacity = '0.7';
+            
+            notificationItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.transition = 'all 0.4s ease';
+                    item.style.opacity = '0.2';
+                    item.style.transform = 'translateX(-30px) scale(0.9)';
+                    item.style.filter = 'grayscale(1)';
+                }, index * 100);
+            });
+            
+            // Update UI after animation
+            setTimeout(() => {
+                const counter = document.querySelector('.notification-count');
+                if (counter) {
+                    counter.style.transition = 'all 0.3s ease';
+                    counter.textContent = '0 new';
+                    counter.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+                }
+                
+                this.textContent = '✓ All Read';
+                this.style.opacity = '1';
+                this.style.background = 'rgba(45,134,89,0.2)';
+            }, notificationItems.length * 100 + 400);
+        });
+    }
+    
+    // Parallax Effect for Hero Section
+    const heroSection = document.querySelector('[style*="padding: 4rem 2rem"]');
+    if (heroSection) {
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const rate = scrolled * -0.5;
+            heroSection.style.transform = `translateY(${rate}px)`;
+        });
+    }
+    
+    // Interactive Statistics Animation
+    document.querySelectorAll('[style*="font-size: 2.5rem"]').forEach(stat => {
+        stat.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.1)';
+            this.style.textShadow = '0 0 20px var(--accent)';
+        });
+        
+        stat.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+            this.style.textShadow = 'none';
+        });
+    });
+    
+    // Dynamic Background Particles
+    function createParticle() {
+        const particle = document.createElement('div');
+        particle.style.cssText = `
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: rgba(45,134,89,0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+            animation: floatUp 8s linear infinite;
+        `;
+        
+        particle.style.left = Math.random() * 100 + 'vw';
+        particle.style.animationDelay = Math.random() * 8 + 's';
+        
+        document.body.appendChild(particle);
+        
+        setTimeout(() => particle.remove(), 8000);
+    }
+    
+    // Create particles periodically
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        setInterval(createParticle, 2000);
+    }
+    
+    // Smooth Reveal Animations
     const observerOptions = {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
     };
     
-    const observer = new IntersectionObserver((entries) => {
+    const revealObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                const counter = entry.target.querySelector('.counter');
-                if (counter && !counter.classList.contains('animated')) {
-                    counter.classList.add('animated');
-                    animateCounter(counter);
-                }
                 entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
             }
         });
     }, observerOptions);
     
-    // Observe stat cards
-    document.querySelectorAll('.stat-card').forEach(card => {
-        observer.observe(card);
+    // Apply reveal animation to cards
+    document.querySelectorAll('.card').forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+        revealObserver.observe(card);
     });
     
-    // Smooth scroll for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+    // Interactive Button Enhancements
+    document.querySelectorAll('.btn').forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px) scale(1.05)';
+            this.style.boxShadow = '0 8px 25px rgba(45,134,89,0.4)';
+        });
+        
+        btn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+            this.style.boxShadow = '0 6px 20px rgba(45,134,89,0.3)';
+        });
+        
+        btn.addEventListener('click', function(e) {
+            // Create success ripple
+            const ripple = document.createElement('span');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+                background: rgba(255,255,255,0.4);
+                border-radius: 50%;
+                transform: scale(0);
+                animation: ripple 0.6s ease-out;
+                pointer-events: none;
+            `;
+            
+            this.style.position = 'relative';
+            this.style.overflow = 'hidden';
+            this.appendChild(ripple);
+            
+            setTimeout(() => ripple.remove(), 600);
         });
     });
+    
+    // Add floating animation keyframes
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+})();
 </script>
 {% endblock %}
