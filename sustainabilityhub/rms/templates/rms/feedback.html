@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Submit Feedback{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 700px; margin: 0 auto;">
+    <h1 style="color: var(--accent-2); margin-bottom: 1.5rem;">📝 Submit Feedback</h1>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="rating">Rating (1-5 stars)</label>
+            <select name="rating" id="rating" required>
+                <option value="">Select rating</option>
+                <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                <option value="4">⭐⭐⭐⭐ Good</option>
+                <option value="3">⭐⭐⭐ Average</option>
+                <option value="2">⭐⭐ Poor</option>
+                <option value="1">⭐ Very Poor</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="message">Your Feedback</label>
+            <textarea name="message" id="message" rows="6" required placeholder="Share your experience with EcoConnect..."></textarea>
+        </div>
+        
+        <button type="submit" class="btn">Submit Feedback</button>
+        <a href="{% url 'home' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

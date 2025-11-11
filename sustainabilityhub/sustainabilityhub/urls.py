@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import views as auth_views
 from forums.views import home_view
 from accounts import views
+from sustainabilityhub.search_views import global_search
 
 # Customize admin site
 admin.site.site_header = "Sustainability Hub Administration"
@@ -34,6 +35,8 @@ urlpatterns = [
     path('notifications/', include('notifications.urls')),
     path('moderation/', include('moderation.urls')),
     path('reports/', include('rms.urls')),
+    path('search/', global_search, name='global_search'),
+    path('ckeditor/', include('ckeditor_uploader.urls')),
 ]
 
 

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}User Feedbacks{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="color: var(--accent-2); margin-bottom: 1.5rem;">💬 User Feedbacks</h1>
+    
+    {% if feedbacks %}
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for feedback in feedbacks %}
+                <div style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 4px solid {% if feedback.rating >= 4 %}#28a745{% elif feedback.rating == 3 %}#ffc107{% else %}#dc3545{% endif %};">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <div>
+                            <strong style="color: var(--accent-2);">{{ feedback.user.username }}</strong>
+                            <div style="color: #ffc107; font-size: 1.2rem; margin-top: 0.25rem;">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= feedback.rating %}⭐{% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <span style="color: var(--muted); font-size: 0.9rem;">{{ feedback.created_at|date:"M d, Y g:i A" }}</span>
+                    </div>
+                    <p style="color: rgba(255,255,255,0.9); line-height: 1.6; margin: 0;">{{ feedback.message }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="color: var(--muted); text-align: center; padding: 2rem;">No feedbacks yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

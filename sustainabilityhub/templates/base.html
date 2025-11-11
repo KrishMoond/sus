@@ -25,6 +25,8 @@
             --radius-md: 14px;
             --transition: 0.35s cubic-bezier(0.4,0,0.2,1);
         }
+        
+
 
         * {
             margin: 0;
@@ -150,6 +152,8 @@
             align-items: center;
             gap: 1rem;
         }
+        
+
 
         .navbar-brand {
             font-size: 1.3rem;
@@ -767,8 +771,6 @@
                     <a href="{% url 'home' %}" class="navbar-brand" aria-label="EcoConnect home">🌱 EcoConnect</a>
                 </div>
 
-
-
                 <div id="primary-nav" class="navbar-links" role="menu" aria-hidden="true">
                     {% if user.is_authenticated %}
                         <!-- Authenticated User Navbar -->
@@ -973,15 +975,14 @@
                 });
             });
 
-            // Auto-dismiss messages after 5 seconds
+            // Convert Django messages to toasts
             document.querySelectorAll('.message').forEach(message => {
-                setTimeout(() => {
-                    if (message.parentNode) {
-                        message.style.transform = 'translateX(100%)';
-                        message.style.opacity = '0';
-                        setTimeout(() => message.remove(), 300);
-                    }
-                }, 5000);
+                const text = message.textContent.replace('×', '').trim();
+                const type = message.classList.contains('message-success') ? 'success' :
+                           message.classList.contains('message-error') ? 'error' :
+                           message.classList.contains('message-info') ? 'info' : 'success';
+                Toast.show(text, type);
+                message.remove();
             });
 
             // User Dropdown Toggle
@@ -1223,7 +1224,53 @@
 
             // Disabled scroll animations to improve performance
 
-            // Theme switching disabled for performance
+
+            
+            // Toast Notification System
+            const Toast = {
+                show(message, type = 'success') {
+                    const toast = document.createElement('div');
+                    const colors = {
+                        success: 'linear-gradient(135deg, #28a745, #20c997)',
+                        error: 'linear-gradient(135deg, #dc3545, #c82333)',
+                        info: 'linear-gradient(135deg, #17a2b8, #138496)',
+                        warning: 'linear-gradient(135deg, #ffc107, #e0a800)'
+                    };
+                    
+                    toast.style.cssText = `
+                        position: fixed;
+                        bottom: 20px;
+                        right: 20px;
+                        background: ${colors[type] || colors.success};
+                        color: white;
+                        padding: 1rem 1.5rem;
+                        border-radius: 12px;
+                        box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+                        z-index: 10000;
+                        transform: translateY(100px);
+                        opacity: 0;
+                        transition: all 0.3s ease;
+                        max-width: 300px;
+                        font-weight: 600;
+                    `;
+                    
+                    toast.textContent = message;
+                    document.body.appendChild(toast);
+                    
+                    setTimeout(() => {
+                        toast.style.transform = 'translateY(0)';
+                        toast.style.opacity = '1';
+                    }, 100);
+                    
+                    setTimeout(() => {
+                        toast.style.transform = 'translateY(100px)';
+                        toast.style.opacity = '0';
+                        setTimeout(() => toast.remove(), 300);
+                    }, 3000);
+                }
+            };
+            
+            window.Toast = Toast;
 
         })();
         

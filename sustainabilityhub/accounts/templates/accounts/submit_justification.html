@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Submit Justification{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 700px; margin: 0 auto;">
+    <h1 style="color: #ffc107; margin-bottom: 1.5rem;">⚖️ Submit Justification</h1>
+    
+    <div style="padding: 1rem; background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); border-radius: 12px; margin-bottom: 1.5rem;">
+        <h3 style="color: #fff3cd; margin-bottom: 0.5rem;">Warning Details</h3>
+        <div style="color: rgba(255,255,255,0.9); margin-bottom: 0.5rem;"><strong>Severity:</strong> {{ warning.get_severity_display }}</div>
+        <div style="color: rgba(255,255,255,0.9); margin-bottom: 0.5rem;"><strong>Reason:</strong> {{ warning.reason }}</div>
+        <div style="color: rgba(255,255,255,0.9); margin-bottom: 0.5rem;"><strong>Description:</strong> {{ warning.description }}</div>
+        <div style="color: var(--muted); font-size: 0.9rem;"><strong>Issued:</strong> {{ warning.created_at|date:"M d, Y g:i A" }}</div>
+    </div>
+    
+    {% if warning.justification %}
+        <div style="padding: 1rem; background: rgba(40,167,69,0.1); border: 1px solid rgba(40,167,69,0.3); border-radius: 12px; margin-bottom: 1.5rem;">
+            <h3 style="color: #d4edda; margin-bottom: 0.5rem;">Your Previous Justification</h3>
+            <p style="color: rgba(255,255,255,0.9); margin: 0;">{{ warning.justification }}</p>
+            <div style="color: var(--muted); font-size: 0.9rem; margin-top: 0.5rem;">Submitted: {{ warning.justification_submitted_at|date:"M d, Y g:i A" }}</div>
+        </div>
+    {% endif %}
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="justification">Your Justification</label>
+            <textarea name="justification" id="justification" rows="6" required placeholder="Explain your side of the story..."></textarea>
+            <small style="color: var(--muted); display: block; margin-top: 0.5rem;">Provide a clear explanation of why you believe this warning may be unjustified or provide context.</small>
+        </div>
+        
+        <button type="submit" class="btn">Submit Justification</button>
+        <a href="{% url 'accounts:my_warnings' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

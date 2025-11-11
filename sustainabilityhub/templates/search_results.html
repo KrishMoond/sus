@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Results{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="color: var(--accent-2); margin-bottom: 1.5rem;">🔍 Search Results</h1>
+    
+    <form method="get" style="margin-bottom: 2rem;">
+        <div style="display: flex; gap: 1rem;">
+            <input type="search" name="q" value="{{ query }}" placeholder="Search forums, projects, events, resources..." style="flex: 1; padding: 0.75rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white;">
+            <button type="submit" class="btn">Search</button>
+        </div>
+    </form>
+    
+    {% if query %}
+        <p style="color: var(--muted); margin-bottom: 2rem;">Showing results for: <strong style="color: var(--accent-2);">"{{ query }}"</strong></p>
+        
+        {% if results.topics %}
+            <div style="margin-bottom: 2rem;">
+                <h2 style="color: var(--accent-2); margin-bottom: 1rem;">💬 Forum Topics ({{ results.topics|length }})</h2>
+                {% for topic in results.topics %}
+                    <div style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 0.5rem;">
+                        <a href="{% url 'forums:topic_detail' pk=topic.pk %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600;">{{ topic.title }}</a>
+                        <div style="color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem;">by {{ topic.author.username }} • {{ topic.created_at|date:"M d, Y" }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% if results.projects %}
+            <div style="margin-bottom: 2rem;">
+                <h2 style="color: var(--accent-2); margin-bottom: 1rem;">🚀 Projects ({{ results.projects|length }})</h2>
+                {% for project in results.projects %}
+                    <div style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 0.5rem;">
+                        <a href="{% url 'projects:detail' pk=project.pk %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600;">{{ project.title }}</a>
+                        <div style="color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem;">by {{ project.creator.username }} • {{ project.get_status_display }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% if results.events %}
+            <div style="margin-bottom: 2rem;">
+                <h2 style="color: var(--accent-2); margin-bottom: 1rem;">📅 Events ({{ results.events|length }})</h2>
+                {% for event in results.events %}
+                    <div style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 0.5rem;">
+                        <a href="{% url 'events:detail' pk=event.pk %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600;">{{ event.title }}</a>
+                        <div style="color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem;">{{ event.start_date|date:"M d, Y" }} • {{ event.location }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% if results.resources %}
+            <div style="margin-bottom: 2rem;">
+                <h2 style="color: var(--accent-2); margin-bottom: 1rem;">📚 Resources ({{ results.resources|length }})</h2>
+                {% for resource in results.resources %}
+                    <div style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 0.5rem;">
+                        <a href="{% url 'resources:detail' pk=resource.pk %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600;">{{ resource.title }}</a>
+                        <div style="color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem;">by {{ resource.author.username }} • {{ resource.get_resource_type_display }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% if results.users %}
+            <div style="margin-bottom: 2rem;">
+                <h2 style="color: var(--accent-2); margin-bottom: 1rem;">👥 Users ({{ results.users|length }})</h2>
+                {% for user in results.users %}
+                    <div style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 0.5rem;">
+                        <a href="{% url 'profiles:detail' username=user.username %}" style="color: var(--accent-2); text-decoration: none; font-weight: 600;">{{ user.username }}</a>
+                        {% if user.get_full_name %}
+                            <span style="color: var(--muted);">• {{ user.get_full_name }}</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% if not results.topics and not results.projects and not results.events and not results.resources and not results.users %}
+            <div style="text-align: center; padding: 3rem; background: rgba(255,255,255,0.02); border-radius: 12px;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+                <h3 style="color: var(--muted);">No results found</h3>
+                <p style="color: rgba(255,255,255,0.6);">Try different keywords or check your spelling</p>
+            </div>
+        {% endif %}
+    {% else %}
+        <div style="text-align: center; padding: 3rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+            <h3 style="color: var(--muted);">Enter a search query</h3>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

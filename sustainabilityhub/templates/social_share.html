@@ -1,0 +1,45 @@
+{% load static %}
+<div class="social-share" style="display: flex; gap: 0.5rem; align-items: center;">
+    <span style="color: var(--muted); font-size: 0.9rem; margin-right: 0.5rem;">Share:</span>
+    
+    <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text={{ title|urlencode }}" 
+       target="_blank" 
+       rel="noopener"
+       style="padding: 0.5rem 1rem; background: #1DA1F2; color: white; border-radius: 8px; text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.5rem;"
+       onclick="window.open(this.href, 'share-twitter', 'width=550,height=450'); return false;">
+        🐦 Twitter
+    </a>
+    
+    <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" 
+       target="_blank" 
+       rel="noopener"
+       style="padding: 0.5rem 1rem; background: #4267B2; color: white; border-radius: 8px; text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.5rem;"
+       onclick="window.open(this.href, 'share-facebook', 'width=550,height=450'); return false;">
+        📘 Facebook
+    </a>
+    
+    <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri }}" 
+       target="_blank" 
+       rel="noopener"
+       style="padding: 0.5rem 1rem; background: #0077B5; color: white; border-radius: 8px; text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.5rem;"
+       onclick="window.open(this.href, 'share-linkedin', 'width=550,height=450'); return false;">
+        💼 LinkedIn
+    </a>
+    
+    <button onclick="copyToClipboard('{{ request.build_absolute_uri }}')" 
+            style="padding: 0.5rem 1rem; background: rgba(255,255,255,0.1); color: var(--muted); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+        🔗 Copy Link
+    </button>
+</div>
+
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        if (window.Toast) {
+            window.Toast.show('Link copied to clipboard!', 'success');
+        } else {
+            alert('Link copied to clipboard!');
+        }
+    });
+}
+</script>

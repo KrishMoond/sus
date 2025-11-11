@@ -17,4 +17,5 @@ urlpatterns = [
     path('user-detail/<int:pk>/', views.user_detail, name='user_detail'),
     path('my-warnings/', views.my_warnings, name='my_warnings'),
     path('profile/', views.profile, name='profile'),
+    path('warning/<int:pk>/justify/', views.submit_justification, name='submit_justification'),
 ]

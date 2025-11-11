@@ -33,3 +33,17 @@ class Report(models.Model):
     
     def __str__(self):
         return f'{self.get_category_display()} - {self.subject}'
+
+class Feedback(models.Model):
+    RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='feedbacks')
+    rating = models.IntegerField(choices=RATING_CHOICES)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f'Feedback from {self.user.username} - {self.rating}/5'

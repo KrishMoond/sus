@@ -189,6 +189,25 @@ def profile(request):
     warnings = user.warnings.filter(is_active=True).order_by('-created_at')[:5]
     return render(request, 'accounts/profile.html', {'stats': stats, 'warnings': warnings})
 
+@login_required
+def submit_justification(request, pk):
+    """Submit justification for a warning"""
+    from django.utils import timezone
+    warning = get_object_or_404(UserWarning, pk=pk, user=request.user)
+    
+    if request.method == 'POST':
+        justification = request.POST.get('justification', '').strip()
+        if justification:
+            warning.justification = justification
+            warning.justification_submitted_at = timezone.now()
+            warning.save()
+            messages.success(request, 'Your justification has been submitted.')
+            return redirect('accounts:my_warnings')
+        else:
+            messages.error(request, 'Please provide a justification.')
+    
+    return render(request, 'accounts/submit_justification.html', {'warning': warning})
+
 @user_passes_test(lambda u: u.is_superuser)
 def user_detail(request, pk):
     from django.db.models import Count

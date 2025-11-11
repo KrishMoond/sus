@@ -8,4 +8,6 @@ urlpatterns = [
     path('my-reports/', views.my_reports, name='my_reports'),
     path('admin/', views.admin_reports, name='admin_reports'),
     path('resolve/<int:pk>/', views.resolve_report, name='resolve'),
+    path('feedback/', views.submit_feedback, name='feedback'),
+    path('feedbacks/', views.view_feedbacks, name='view_feedbacks'),
 ]

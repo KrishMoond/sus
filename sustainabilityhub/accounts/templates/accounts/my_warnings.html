@@ -48,6 +48,18 @@
                     <p style="margin: 0; color: var(--muted); line-height: 1.6;">{{ warning.description }}</p>
                 </div>
                 
+                {% if warning.justification %}
+                    <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,119,190,0.1); border: 1px solid rgba(0,119,190,0.3); border-radius: 8px;">
+                        <h4 style="color: #17a2b8; margin-bottom: 0.5rem;">Your Justification</h4>
+                        <p style="margin: 0; color: var(--muted); line-height: 1.6;">{{ warning.justification }}</p>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-top: 0.5rem;">Submitted: {{ warning.justification_submitted_at|date:"M d, Y g:i A" }}</div>
+                    </div>
+                {% else %}
+                    <div style="margin-top: 1rem;">
+                        <a href="{% url 'accounts:submit_justification' pk=warning.pk %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.9rem;">⚖️ Submit Justification</a>
+                    </div>
+                {% endif %}
+                
                 {% if warning.severity == 'final' %}
                     <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(220,53,69,0.1); border: 1px solid rgba(220,53,69,0.3); border-radius: 8px;">
                         <p style="margin: 0; color: #ffb3b3; font-weight: 600;">⚠️ This is a final warning. Further violations may result in account suspension.</p>

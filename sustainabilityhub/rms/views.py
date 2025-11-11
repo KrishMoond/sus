@@ -3,8 +3,10 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils import timezone
 from .models import Report
+from django_ratelimit.decorators import ratelimit
 
 @login_required
+@ratelimit(key='user', rate='5/h', method='POST')
 def create_report(request):
     if request.method == 'POST':
         category = request.POST.get('category')
@@ -74,3 +76,30 @@ def resolve_report(request, pk):
     # Redirect to current status view or pending if status changed
     redirect_status = request.POST.get('status', 'pending')
     return redirect(f'/reports/admin/?status={redirect_status}')
+
+@login_required
+@ratelimit(key='user', rate='3/h', method='POST')
+def submit_feedback(request):
+    from .models import Feedback
+    if request.method == 'POST':
+        rating = request.POST.get('rating')
+        message = request.POST.get('message')
+        
+        if rating and message:
+            Feedback.objects.create(
+                user=request.user,
+                rating=int(rating),
+                message=message
+            )
+            messages.success(request, 'Thank you for your feedback!')
+            return redirect('home')
+        else:
+            messages.error(request, 'Please provide both rating and message.')
+    
+    return render(request, 'rms/feedback.html')
+
+@user_passes_test(lambda u: u.is_superuser)
+def view_feedbacks(request):
+    from .models import Feedback
+    feedbacks = Feedback.objects.all().select_related('user')
+    return render(request, 'rms/view_feedbacks.html', {'feedbacks': feedbacks})
