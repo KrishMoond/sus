@@ -774,6 +774,7 @@
                 <div id="primary-nav" class="navbar-links" role="menu" aria-hidden="true">
                     {% if user.is_authenticated %}
                         <!-- Authenticated User Navbar -->
+                        <a role="menuitem" href="{% url 'community:dashboard' %}">🌱 Sustainability Hub</a>
                         <a role="menuitem" href="{% url 'forums:topics' %}">🌿 Forums</a>
                         <a role="menuitem" href="{% url 'projects:list' %}">🚀 Projects</a>
                         <a role="menuitem" href="{% url 'events:list' %}">📅 Events</a>
@@ -848,13 +849,17 @@
                                         🛡️ Admin Dashboard
                                     </a>
                                 {% endif %}
-                                <a href="{% url 'logout' %}" style="display: block; padding: 0.75rem 1rem; color: #ffb3b3; text-decoration: none; border-radius: 8px; transition: background 0.2s; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 0.5rem;">
-                                    🚪 Logout
-                                </a>
+                                <form method="post" action="{% url 'logout' %}" style="margin: 0; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 0.5rem;">
+                                    {% csrf_token %}
+                                    <button type="submit" style="display: block; width: 100%; padding: 0.75rem 1rem; color: #ffb3b3; background: transparent; border: none; text-align: left; border-radius: 8px; transition: background 0.2s; cursor: pointer; font-size: inherit;">
+                                        🚪 Logout
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     {% else %}
                         <!-- Guest User Navbar - Only Public Links -->
+                        <a role="menuitem" href="{% url 'community:dashboard' %}">🌱 Sustainability Hub</a>
                         <a role="menuitem" href="{% url 'forums:topics' %}">🌿 Forums</a>
                         <a role="menuitem" href="{% url 'projects:list' %}">🚀 Projects</a>
                         <a role="menuitem" href="{% url 'events:list' %}">📅 Events</a>

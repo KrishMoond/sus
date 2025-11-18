@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sustainability Challenges - EcoConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .challenge-card {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(0,255,136,0.1);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .challenge-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        border-color: rgba(0,255,136,0.3);
+    }
+    
+    .challenge-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .challenge-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .challenge-meta {
+        display: flex;
+        gap: 1rem;
+        margin: 1rem 0;
+        font-size: 0.9rem;
+        color: var(--muted);
+    }
+    
+    .challenge-progress {
+        margin: 1rem 0;
+    }
+    
+    .progress-bar {
+        background: rgba(255,255,255,0.1);
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+    
+    .progress-fill {
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+    
+    .challenge-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 0.75rem;
+        background: rgba(0,255,136,0.05);
+        border-radius: 8px;
+    }
+    
+    .stat-number {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--accent-2);
+    }
+    
+    .challenge-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .btn-join {
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-join:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,255,136,0.4);
+    }
+    
+    .btn-joined {
+        background: rgba(0,255,136,0.2);
+        color: var(--accent-2);
+        border: 1px solid var(--accent);
+    }
+    
+    .challenge-badge {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: var(--accent-2);
+        color: var(--bg-900);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <h1 style="color: var(--accent-2); margin-bottom: 1rem;">🎯 Sustainability Challenges</h1>
+        <p style="color: var(--muted); font-size: 1.1rem;">Join challenges, make impact, earn rewards</p>
+    </div>
+    
+    <!-- Create Challenge Button -->
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <button class="btn" onclick="showCreateForm()" style="padding: 1rem 2rem;">
+            🚀 Create New Challenge
+        </button>
+    </div>
+    
+    <!-- Challenge Creation Form (Hidden by default) -->
+    <div id="create-form" class="card" style="display: none; margin-bottom: 2rem;">
+        <h3 style="color: var(--accent-2); margin-bottom: 1rem;">Create Sustainability Challenge</h3>
+        <form id="challenge-form" method="post" action="{% url 'community:create_challenge' %}">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>Challenge Title</label>
+                <input type="text" name="content" placeholder="e.g., Bike to Work for 30 Days" required>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label>Duration (days)</label>
+                    <input type="number" name="challenge_duration" min="1" max="365" required>
+                </div>
+                <div class="form-group">
+                    <label>Impact Category</label>
+                    <select name="impact_category" required>
+                        <option value="energy">⚡ Energy Saving</option>
+                        <option value="waste">♻️ Waste Reduction</option>
+                        <option value="transport">🚲 Sustainable Transport</option>
+                        <option value="food">🌱 Sustainable Food</option>
+                        <option value="water">💧 Water Conservation</option>
+                        <option value="biodiversity">🌿 Biodiversity</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Expected CO2 Impact (kg per participant)</label>
+                <input type="number" name="carbon_impact" step="0.1" placeholder="e.g., 5.2">
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button type="submit" class="btn">Create Challenge</button>
+                <button type="button" class="btn btn-secondary" onclick="hideCreateForm()">Cancel</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Active Challenges -->
+    <div class="challenges-grid">
+        {% for challenge in challenges %}
+        <div class="challenge-card" data-challenge-id="{{ challenge.id }}">
+            <div class="challenge-badge">
+                {{ challenge.challenge_duration }} days
+            </div>
+            
+            <div class="challenge-header">
+                <div class="challenge-icon">
+                    {% if challenge.impact_category == 'energy' %}⚡
+                    {% elif challenge.impact_category == 'waste' %}♻️
+                    {% elif challenge.impact_category == 'transport' %}🚲
+                    {% elif challenge.impact_category == 'food' %}🌱
+                    {% elif challenge.impact_category == 'water' %}💧
+                    {% else %}🎯{% endif %}
+                </div>
+                <div>
+                    <h3 style="color: var(--accent-2); margin: 0;">{{ challenge.content }}</h3>
+                    <p style="color: var(--muted); margin: 0.25rem 0;">by {{ challenge.author.username }}</p>
+                </div>
+            </div>
+            
+            <div class="challenge-meta">
+                <span>📅 {{ challenge.created_at|timesince }} ago</span>
+                <span>👥 {{ challenge.participants_count }} participants</span>
+                {% if challenge.carbon_impact %}
+                    <span>🌍 {{ challenge.carbon_impact }}kg CO2 each</span>
+                {% endif %}
+            </div>
+            
+            <div class="challenge-progress">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 600;">Progress</span>
+                    <span style="color: var(--accent-2);">{{ challenge.participants_count }}/100 joined</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ challenge.participants_count }}%;"></div>
+                </div>
+            </div>
+            
+            <div class="challenge-stats">
+                <div class="stat-item">
+                    <div class="stat-number">{{ challenge.participants_count }}</div>
+                    <div style="font-size: 0.8rem; color: var(--muted);">Participants</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ challenge.challenge_duration }}</div>
+                    <div style="font-size: 0.8rem; color: var(--muted);">Days</div>
+                </div>
+                {% if challenge.carbon_impact %}
+                <div class="stat-item">
+                    <div class="stat-number">{{ challenge.carbon_impact|floatformat:1 }}</div>
+                    <div style="font-size: 0.8rem; color: var(--muted);">kg CO2</div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="challenge-actions">
+                {% if user.is_authenticated and challenge.user_joined %}
+                    <button class="btn-joined" disabled>
+                        ✅ Joined
+                    </button>
+                {% else %}
+                    <button class="btn-join" onclick="joinChallenge({{ challenge.id }})">
+                        🎯 Join Challenge
+                    </button>
+                {% endif %}
+                <button class="btn btn-secondary" onclick="shareChallenge({{ challenge.id }})">
+                    📤 Share
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem;">No active challenges</h3>
+            <p style="color: var(--muted); margin-bottom: 2rem;">Be the first to create a sustainability challenge!</p>
+            <button class="btn" onclick="showCreateForm()">🚀 Create First Challenge</button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function showCreateForm() {
+    document.getElementById('create-form').style.display = 'block';
+    document.getElementById('create-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideCreateForm() {
+    document.getElementById('create-form').style.display = 'none';
+}
+
+// Handle challenge creation form
+document.getElementById('challenge-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            } else {
+                window.location.reload();
+            }
+        } else {
+            alert(data.message || 'Error creating challenge');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create challenge');
+    });
+});
+
+function joinChallenge(challengeId) {
+    fetch(`/community/post/${challengeId}/join/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.action === 'joined') {
+            const btn = event.target;
+            btn.innerHTML = '✅ Joined';
+            btn.classList.remove('btn-join');
+            btn.classList.add('btn-joined');
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            
+            // Update participant count
+            const card = btn.closest('.challenge-card');
+            const countElements = card.querySelectorAll('.stat-number');
+            if (countElements[0]) {
+                countElements[0].textContent = data.participants;
+            }
+            
+            if (window.Toast) {
+                Toast.show(data.message, 'success');
+            }
+        } else {
+            if (window.Toast) {
+                Toast.show(data.message, 'info');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (window.Toast) {
+            Toast.show('Failed to join challenge', 'error');
+        }
+    });
+}
+
+function shareChallenge(challengeId) {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Join this sustainability challenge!',
+            url: window.location.href
+        });
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(window.location.href);
+        if (window.Toast) {
+            Toast.show('Challenge link copied to clipboard!', 'success');
+        }
+    }
+}
+</script>
+{% endblock %}

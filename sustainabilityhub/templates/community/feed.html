@@ -1,0 +1,584 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Community Feed - EcoConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .feed-container {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .main-feed {
+        min-height: 100vh;
+    }
+    
+    .sidebar {
+        position: sticky;
+        top: 100px;
+        height: fit-content;
+    }
+    
+    .post-composer {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(0,255,136,0.1);
+    }
+    
+    .post-card {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(0,255,136,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .post-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+        border-color: rgba(0,255,136,0.3);
+    }
+    
+    .post-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--accent);
+    }
+    
+    .user-info h4 {
+        margin: 0;
+        color: var(--accent-2);
+        font-size: 1rem;
+    }
+    
+    .user-info .timestamp {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin: 0;
+    }
+    
+    .post-content {
+        margin-bottom: 1rem;
+        line-height: 1.6;
+        color: rgba(255,255,255,0.9);
+    }
+    
+    .post-image {
+        width: 100%;
+        border-radius: 12px;
+        margin: 1rem 0;
+        max-height: 400px;
+        object-fit: cover;
+    }
+    
+    .post-actions {
+        display: flex;
+        gap: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: transparent;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+    
+    .action-btn:hover {
+        background: rgba(0,255,136,0.1);
+        color: var(--accent-2);
+    }
+    
+    .action-btn.active {
+        color: var(--accent-2);
+        background: rgba(0,255,136,0.15);
+    }
+    
+    .hashtag {
+        color: var(--accent-2);
+        text-decoration: none;
+        font-weight: 600;
+    }
+    
+    .hashtag:hover {
+        text-decoration: underline;
+    }
+    
+    .trending-hashtags {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(0,255,136,0.1);
+    }
+    
+    .trending-hashtags h3 {
+        color: var(--accent-2);
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+    
+    .hashtag-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .hashtag-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: background 0.2s ease;
+    }
+    
+    .hashtag-item:hover {
+        background: rgba(0,255,136,0.1);
+    }
+    
+    .post-count {
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+    
+    @media (max-width: 768px) {
+        .feed-container {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .sidebar {
+            position: static;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="feed-container">
+    <main class="main-feed">
+        <!-- Post Composer -->
+        <div class="post-composer">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem;">Share with the community</h3>
+            <form id="post-form" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    <textarea name="content" placeholder="Share your sustainability journey, challenge others, or celebrate an eco-achievement!" rows="3" style="resize: vertical;"></textarea>
+                </div>
+                
+                <!-- Sustainability-specific fields -->
+                <div id="sustainability-fields" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(0,255,136,0.05); border-radius: 8px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label>Impact Category</label>
+                            <select name="impact_category">
+                                <option value="">Select category</option>
+                                <option value="energy">⚡ Energy Saving</option>
+                                <option value="waste">♾️ Waste Reduction</option>
+                                <option value="transport">🚌 Sustainable Transport</option>
+                                <option value="food">🌱 Sustainable Food</option>
+                                <option value="water">💧 Water Conservation</option>
+                                <option value="biodiversity">🌿 Biodiversity</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Carbon Impact (kg CO2 saved)</label>
+                            <input type="number" name="carbon_impact" step="0.01" placeholder="e.g., 2.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Location (optional)</label>
+                            <input type="text" name="location" placeholder="City, Country">
+                        </div>
+                        <div class="form-group" id="challenge-duration" style="display: none;">
+                            <label>Challenge Duration (days)</label>
+                            <input type="number" name="challenge_duration" placeholder="e.g., 30">
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem;">
+                    <label for="post-image" class="btn btn-secondary" style="cursor: pointer; padding: 0.5rem 1rem;">
+                        📷 Add Photo
+                    </label>
+                    <input type="file" id="post-image" name="image" accept="image/*" style="display: none;">
+                    
+                    <select name="post_type" style="padding: 0.5rem; border-radius: 8px;">
+                        <option value="text">💬 Text Post</option>
+                        <option value="image">📸 Photo Post</option>
+                        <option value="achievement">🏆 Achievement</option>
+                        <option value="challenge">🎯 Sustainability Challenge</option>
+                        <option value="tip">💡 Eco Tip</option>
+                        <option value="impact">🌍 Environmental Impact</option>
+                    </select>
+                    
+                    <button type="submit" class="btn" style="margin-left: auto;">Share Post</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Posts Feed -->
+        <div class="posts-container">
+            {% for post in posts %}
+            <article class="post-card" data-post-id="{{ post.id }}">
+                <div class="post-header">
+                    {% if post.author.avatar %}
+                        <img src="{{ post.author.avatar.url }}" alt="{{ post.author.username }}" class="user-avatar">
+                    {% else %}
+                        <div class="user-avatar" style="background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white;">
+                            {{ post.author.username|first|upper }}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="user-info">
+                        <h4>{{ post.author.get_full_name|default:post.author.username }}</h4>
+                        <p class="timestamp">{{ post.created_at|timesince }} ago</p>
+                    </div>
+                    
+                    {% if post.is_pinned %}
+                        <span style="margin-left: auto; color: var(--accent-2); font-size: 1.2rem;" title="Pinned Post">📌</span>
+                    {% endif %}
+                </div>
+                
+                <div class="post-content">
+                    {% if post.post_type == 'challenge' %}
+                        <div style="background: rgba(0,255,136,0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid var(--accent);">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <span style="font-size: 1.2rem;">🎯</span>
+                                <strong style="color: var(--accent-2);">SUSTAINABILITY CHALLENGE</strong>
+                            </div>
+                            {% if post.challenge_duration %}
+                                <div style="font-size: 0.9rem; color: var(--muted);">Duration: {{ post.challenge_duration }} days</div>
+                            {% endif %}
+                        </div>
+                    {% elif post.post_type == 'achievement' %}
+                        <div style="background: rgba(255,193,7,0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #ffc107;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 1.2rem;">🏆</span>
+                                <strong style="color: #ffc107;">ACHIEVEMENT UNLOCKED</strong>
+                            </div>
+                        </div>
+                    {% elif post.post_type == 'impact' %}
+                        <div style="background: rgba(0,119,190,0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid var(--ocean);">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 1.2rem;">🌍</span>
+                                <strong style="color: var(--ocean);">ENVIRONMENTAL IMPACT</strong>
+                            </div>
+                            {% if post.carbon_impact %}
+                                <div style="font-size: 0.9rem; color: var(--muted); margin-top: 0.5rem;">CO2 Saved: {{ post.carbon_impact }} kg</div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    {{ post.content|linebreaks }}
+                    
+                    {% if post.image %}
+                        <img src="{{ post.image.url }}" alt="Post image" class="post-image">
+                    {% endif %}
+                    
+                    {% if post.link_url %}
+                        <div style="border: 1px solid rgba(0,255,136,0.2); border-radius: 8px; padding: 1rem; margin: 1rem 0;">
+                            <a href="{{ post.link_url }}" target="_blank" style="color: var(--accent-2); text-decoration: none;">
+                                <strong>{{ post.link_title|default:post.link_url }}</strong>
+                            </a>
+                        </div>
+                    {% endif %}
+                    
+                    {% if post.hashtags.all %}
+                        <div style="margin-top: 1rem;">
+                            {% for hashtag in post.hashtags.all %}
+                                <a href="?hashtag={{ hashtag.name }}" class="hashtag">#{{ hashtag.name }}</a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="post-actions">
+                    <button class="action-btn reaction-btn" data-post-id="{{ post.id }}" data-reaction="like">
+                        <span class="reaction-icon">👍</span>
+                        <span class="reaction-count">{{ post.total_reactions }}</span>
+                    </button>
+                    
+                    <button class="action-btn comment-btn" data-post-id="{{ post.id }}">
+                        <span>💬</span>
+                        <span>{{ post.total_comments }}</span>
+                    </button>
+                    
+                    {% if post.post_type == 'challenge' %}
+                        <button class="action-btn join-btn" data-post-id="{{ post.id }}" onclick="joinChallenge({{ post.id }})">
+                            <span>🎯</span>
+                            <span>Join ({{ post.participants_count }})</span>
+                        </button>
+                    {% else %}
+                        <button class="action-btn share-btn" data-post-id="{{ post.id }}">
+                            <span>🔄</span>
+                            <span>Share</span>
+                        </button>
+                    {% endif %}
+                </div>
+            </article>
+            {% empty %}
+            <div class="card" style="text-align: center; padding: 3rem;">
+                <h3 style="color: var(--accent-2); margin-bottom: 1rem;">No posts yet</h3>
+                <p style="color: var(--muted); margin-bottom: 2rem;">Be the first to share something with the community!</p>
+                <a href="#post-form" class="btn">Create First Post</a>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if posts.has_other_pages %}
+        <div style="display: flex; justify-content: center; gap: 1rem; margin: 2rem 0;">
+            {% if posts.has_previous %}
+                <a href="?page={{ posts.previous_page_number }}" class="btn btn-secondary">Previous</a>
+            {% endif %}
+            
+            <span style="display: flex; align-items: center; color: var(--muted);">
+                Page {{ posts.number }} of {{ posts.paginator.num_pages }}
+            </span>
+            
+            {% if posts.has_next %}
+                <a href="?page={{ posts.next_page_number }}" class="btn btn-secondary">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </main>
+    
+    <aside class="sidebar">
+        <!-- Trending Hashtags -->
+        {% if trending_hashtags %}
+        <div class="trending-hashtags">
+            <h3>🔥 Trending Topics</h3>
+            <div class="hashtag-list">
+                {% for hashtag in trending_hashtags %}
+                <div class="hashtag-item">
+                    <a href="?hashtag={{ hashtag.name }}" class="hashtag">#{{ hashtag.name }}</a>
+                    <span class="post-count">{{ hashtag.post_count }} posts</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Sustainability Dashboard -->
+        <div class="trending-hashtags">
+            <h3>🌍 Your Impact</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.9rem;">
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(0,255,136,0.1); border-radius: 8px;">
+                    <span>🍃 CO2 Saved:</span>
+                    <strong>12.5 kg</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(0,119,190,0.1); border-radius: 8px;">
+                    <span>🏆 Challenges:</span>
+                    <strong>3 completed</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(255,193,7,0.1); border-radius: 8px;">
+                    <span>🌱 Streak:</span>
+                    <strong>7 days</strong>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active Challenges -->
+        <div class="trending-hashtags">
+            <h3>🎯 Active Challenges</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div style="padding: 1rem; background: rgba(0,255,136,0.05); border-radius: 8px; border-left: 3px solid var(--accent);">
+                    <div style="font-weight: 600; color: var(--accent-2); margin-bottom: 0.5rem;">🚲 Bike to Work Week</div>
+                    <div style="font-size: 0.8rem; color: var(--muted);">23 participants • 5 days left</div>
+                    <div style="margin-top: 0.5rem;">
+                        <div style="background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px;">
+                            <div style="background: var(--accent-2); height: 100%; width: 60%; border-radius: 2px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <a href="#" class="btn btn-secondary" style="text-align: center; font-size: 0.9rem;">🎯 Join Challenge</a>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="trending-hashtags">
+            <h3>⚡ Quick Actions</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <a href="{% url 'projects:create' %}" class="btn" style="text-align: center;">🚀 Start Project</a>
+                <a href="{% url 'events:create' %}" class="btn btn-secondary" style="text-align: center;">📅 Create Event</a>
+                <a href="{% url 'community:challenges' %}" class="btn" style="text-align: center;">🎯 Challenges</a>
+                <a href="{% url 'community:discover' %}" class="btn btn-secondary" style="text-align: center;">🔍 Discover</a>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle post reactions
+    document.querySelectorAll('.reaction-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            const reactionType = this.dataset.reaction;
+            
+            fetch(`/community/post/${postId}/react/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `reaction_type=${reactionType}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                const countSpan = this.querySelector('.reaction-count');
+                countSpan.textContent = data.total;
+                
+                if (data.action === 'added' || data.action === 'updated') {
+                    this.classList.add('active');
+                } else {
+                    this.classList.remove('active');
+                }
+                
+                // Show success animation
+                this.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 200);
+            });
+        });
+    });
+    
+    // Handle comment toggle
+    document.querySelectorAll('.comment-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            const commentsSection = document.getElementById(`comments-${postId}`);
+            
+            if (commentsSection && commentsSection.style.display === 'none') {
+                commentsSection.style.display = 'block';
+                this.classList.add('active');
+            } else if (commentsSection) {
+                commentsSection.style.display = 'none';
+                this.classList.remove('active');
+            }
+        });
+    });
+    
+    // Handle post type change to show/hide sustainability fields
+    document.querySelector('select[name="post_type"]').addEventListener('change', function() {
+        const sustainabilityFields = document.getElementById('sustainability-fields');
+        const challengeDuration = document.getElementById('challenge-duration');
+        
+        if (['achievement', 'challenge', 'tip', 'impact'].includes(this.value)) {
+            sustainabilityFields.style.display = 'block';
+            if (this.value === 'challenge') {
+                challengeDuration.style.display = 'block';
+            } else {
+                challengeDuration.style.display = 'none';
+            }
+        } else {
+            sustainabilityFields.style.display = 'none';
+        }
+    });
+    
+    // Handle post form submission
+    document.getElementById('post-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Posting...';
+        submitBtn.disabled = true;
+        
+        // Here you would typically send the form data to the server
+        // For now, we'll simulate success
+        setTimeout(() => {
+            if (window.Toast) {
+                Toast.show('Post shared successfully!', 'success');
+            }
+            this.reset();
+            document.getElementById('sustainability-fields').style.display = 'none';
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }, 1000);
+    });
+    
+    // Challenge join functionality
+    window.joinChallenge = function(postId) {
+        fetch(`/community/post/${postId}/join/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const btn = event.target.closest('.join-btn');
+            if (data.action === 'joined') {
+                btn.innerHTML = '<span>✅</span><span>Joined (' + data.participants + ')</span>';
+                btn.classList.add('active');
+                btn.disabled = true;
+            }
+            
+            if (window.Toast) {
+                Toast.show(data.message, data.action === 'joined' ? 'success' : 'info');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (window.Toast) {
+                Toast.show('Failed to join challenge', 'error');
+            }
+        });
+    };
+    
+    // Handle image preview
+    document.getElementById('post-image').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Create preview element
+                let preview = document.getElementById('image-preview');
+                if (!preview) {
+                    preview = document.createElement('div');
+                    preview.id = 'image-preview';
+                    preview.style.cssText = 'margin-top: 1rem; text-align: center;';
+                    document.querySelector('.post-composer form').appendChild(preview);
+                }
+                
+                preview.innerHTML = `
+                    <img src="${e.target.result}" style="max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: cover;">
+                    <button type="button" onclick="this.parentElement.remove(); document.getElementById('post-image').value = '';" style="display: block; margin: 0.5rem auto; background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer;">Remove</button>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,425 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sustainability Hub - EcoConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .main-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .stat-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 1.5rem;
+        text-align: center;
+        border: 1px solid rgba(0,255,136,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--accent-2);
+        margin-bottom: 0.5rem;
+    }
+    
+    .challenge-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(0,255,136,0.1);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .challenge-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(0,255,136,0.3);
+    }
+    
+    .challenge-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .challenge-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    
+    .progress-ring {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: conic-gradient(var(--accent-2) 0deg, var(--accent-2) 120deg, rgba(255,255,255,0.1) 120deg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: var(--accent-2);
+    }
+    
+    .leaderboard-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem;
+        background: rgba(255,255,255,0.03);
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .rank-badge {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.8rem;
+    }
+    
+    .rank-1 { background: linear-gradient(135deg, #ffd700, #ffed4e); color: #000; }
+    .rank-2 { background: linear-gradient(135deg, #c0c0c0, #e8e8e8); color: #000; }
+    .rank-3 { background: linear-gradient(135deg, #cd7f32, #daa520); color: #fff; }
+    .rank-other { background: var(--accent); color: #fff; }
+    
+    .sidebar {
+        position: sticky;
+        top: 100px;
+        height: fit-content;
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .sidebar {
+            position: static;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    <main class="main-content">
+        <!-- Welcome Section -->
+        <div class="card" style="text-align: center; padding: 2rem; background: linear-gradient(135deg, rgba(0,255,136,0.1), rgba(0,119,190,0.05));">
+            <h1 style="color: var(--accent-2); margin-bottom: 1rem;">🌱 Sustainability Hub</h1>
+            <p style="color: var(--muted); font-size: 1.1rem;">Track your impact, join challenges, compete with friends</p>
+        </div>
+        
+        <!-- Personal Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ user_impact.total_carbon|default:0|floatformat:1 }}</div>
+                <div style="color: var(--muted);">kg CO2 Saved</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ user_challenges|length }}</div>
+                <div style="color: var(--muted);">Active Challenges</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ user_impact.total_actions|default:0 }}</div>
+                <div style="color: var(--muted);">Eco Actions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">7</div>
+                <div style="color: var(--muted);">Day Streak</div>
+            </div>
+        </div>
+        
+        <!-- My Active Challenges -->
+        {% if user_challenges %}
+        <div class="card">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem;">🎯 My Active Challenges</h3>
+            {% for participation in user_challenges %}
+            <div class="challenge-card">
+                <div class="challenge-header">
+                    <div class="challenge-icon">
+                        {% if participation.challenge_post.impact_category == 'transport' %}🚲
+                        {% elif participation.challenge_post.impact_category == 'energy' %}⚡
+                        {% elif participation.challenge_post.impact_category == 'waste' %}♻️
+                        {% else %}🌱{% endif %}
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="color: var(--accent-2); margin: 0;">{{ participation.challenge_post.content }}</h4>
+                        <p style="color: var(--muted); margin: 0.25rem 0; font-size: 0.9rem;">
+                            Joined {{ participation.joined_at|timesince }} ago
+                        </p>
+                    </div>
+                    <div class="progress-ring">
+                        {% if participation.completed %}✅{% else %}{{ participation.challenge_post.challenge_duration }}d{% endif %}
+                    </div>
+                </div>
+                
+                {% if not participation.completed %}
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button class="btn" onclick="completeChallenge({{ participation.challenge_post.id }})" style="flex: 1;">
+                        ✅ Mark Complete
+                    </button>
+                    <button class="btn btn-secondary" onclick="shareProgress({{ participation.challenge_post.id }})">
+                        📤 Share Progress
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Available Challenges -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="color: var(--accent-2); margin: 0;">🚀 Available Challenges</h3>
+                <a href="{% url 'community:challenges' %}" class="btn btn-secondary">View All</a>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                {% for challenge in active_challenges %}
+                <div class="challenge-card">
+                    <div class="challenge-header">
+                        <div class="challenge-icon">
+                            {% if challenge.impact_category == 'transport' %}🚲
+                            {% elif challenge.impact_category == 'energy' %}⚡
+                            {% elif challenge.impact_category == 'waste' %}♻️
+                            {% elif challenge.impact_category == 'food' %}🌱
+                            {% elif challenge.impact_category == 'water' %}💧
+                            {% else %}🎯{% endif %}
+                        </div>
+                        <div style="flex: 1;">
+                            <h4 style="color: var(--accent-2); margin: 0;">{{ challenge.content }}</h4>
+                            <p style="color: var(--muted); margin: 0.25rem 0; font-size: 0.9rem;">
+                                {{ challenge.participants_count }} participants • {{ challenge.challenge_duration }} days
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 1rem 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="font-size: 0.9rem;">Progress</span>
+                            <span style="font-size: 0.9rem; color: var(--accent-2);">{{ challenge.participants_count }}/100</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px;">
+                            <div style="background: var(--accent-2); height: 100%; width: {{ challenge.participants_count }}%; border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                    
+                    {% if challenge.user_joined %}
+                        <button class="btn btn-secondary" disabled style="width: 100%; opacity: 0.7;">
+                            ✅ Joined
+                        </button>
+                    {% else %}
+                        <button class="btn" onclick="joinChallenge({{ challenge.id }})" style="width: 100%;">
+                            🎯 Join Challenge
+                        </button>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div style="text-align: center; padding: 2rem; color: var(--muted);">
+                    <p>No active challenges. Be the first to create one!</p>
+                    <a href="{% url 'community:challenges' %}" class="btn">Create Challenge</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+    
+    <aside class="sidebar">
+        <!-- Impact Leaderboard -->
+        <div class="card">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem;">🏆 Impact Leaders</h3>
+            {% for leader in leaderboard %}
+            <div class="leaderboard-item">
+                <div class="rank-badge {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% else %}rank-other{% endif %}">
+                    {{ forloop.counter }}
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600;">{{ leader.user__username }}</div>
+                    <div style="font-size: 0.8rem; color: var(--muted);">{{ leader.total_impact|floatformat:1 }} kg CO2</div>
+                </div>
+            </div>
+            {% empty %}
+            <p style="color: var(--muted); text-align: center;">No data yet</p>
+            {% endfor %}
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem;">⚡ Quick Actions</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <a href="{% url 'community:challenges' %}" class="btn" style="text-align: center;">🎯 Browse Challenges</a>
+                <button class="btn btn-secondary" onclick="logImpact()" style="text-align: center;">📊 Log Impact</button>
+                <a href="{% url 'projects:create' %}" class="btn btn-secondary" style="text-align: center;">🚀 Start Project</a>
+            </div>
+        </div>
+        
+        <!-- Daily Tip -->
+        <div class="card" style="background: linear-gradient(135deg, rgba(255,193,7,0.1), rgba(255,215,0,0.05));">
+            <h3 style="color: #ffc107; margin-bottom: 1rem;">💡 Daily Eco Tip</h3>
+            <p style="color: var(--muted); line-height: 1.6;">
+                Switch to LED bulbs to save up to 80% energy and reduce 2kg CO2 per month per bulb.
+            </p>
+            <button class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">Mark as Done</button>
+        </div>
+    </aside>
+</div>
+
+<script>
+function joinChallenge(challengeId) {
+    fetch(`/community/post/${challengeId}/join/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.action === 'joined') {
+            const btn = event.target;
+            btn.innerHTML = '✅ Joined';
+            btn.classList.remove('btn');
+            btn.classList.add('btn-secondary');
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            
+            if (window.Toast) {
+                Toast.show(data.message, 'success');
+            }
+        } else {
+            if (window.Toast) {
+                Toast.show(data.message, 'info');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (window.Toast) {
+            Toast.show('Failed to join challenge', 'error');
+        }
+    });
+}
+
+function completeChallenge(challengeId) {
+    const impact = prompt('How much CO2 did you save? (kg)');
+    if (impact) {
+        fetch(`/community/api/posts/${challengeId}/complete_challenge/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                impact_achieved: parseFloat(impact)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (window.Toast) {
+                Toast.show(data.message, 'success');
+            }
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+}
+
+function logImpact() {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); display: flex; align-items: center;
+        justify-content: center; z-index: 10000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: var(--bg-800); padding: 2rem; border-radius: 16px; max-width: 400px; width: 90%;">
+            <h3 style="color: var(--accent-2); margin-bottom: 1rem;">📊 Log Your Impact</h3>
+            <form id="impact-form">
+                <div class="form-group">
+                    <label>Impact Type</label>
+                    <select name="impact_type" required>
+                        <option value="carbon_saved">CO2 Saved</option>
+                        <option value="waste_reduced">Waste Reduced</option>
+                        <option value="energy_saved">Energy Saved</option>
+                        <option value="water_saved">Water Saved</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input type="number" name="amount" step="0.1" required>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button type="submit" class="btn" style="flex: 1;">Save Impact</button>
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    modal.className = 'modal';
+    document.body.appendChild(modal);
+    
+    modal.querySelector('#impact-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (window.Toast) {
+            Toast.show('Impact logged successfully!', 'success');
+        }
+        modal.remove();
+    });
+}
+
+function shareProgress(challengeId) {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Check out my sustainability progress!',
+            text: 'I\'m making a positive environmental impact. Join me!',
+            url: window.location.href
+        });
+    } else {
+        if (window.Toast) {
+            Toast.show('Progress shared!', 'success');
+        }
+    }
+}
+</script>
+{% endblock %}

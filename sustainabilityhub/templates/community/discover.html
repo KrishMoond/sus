@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Discover - EcoConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .post-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(0,255,136,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .post-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(0,255,136,0.3);
+    }
+    
+    .post-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+    }
+    
+    .post-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .action-btn {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.2);
+        color: var(--muted);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .action-btn:hover {
+        background: rgba(0,255,136,0.1);
+        border-color: var(--accent);
+        color: var(--accent-2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="color: var(--accent-2); margin-bottom: 1rem;">🔍 Discover</h1>
+        <p style="color: var(--muted);">Find new posts and connect with the community</p>
+    </div>
+    
+    {% for post in posts %}
+    <div class="post-card">
+        <div class="post-header">
+            <div class="user-avatar">
+                {{ post.author.username|first|upper }}
+            </div>
+            <div>
+                <h4 style="color: var(--accent-2); margin: 0;">{{ post.author.username }}</h4>
+                <p style="color: var(--muted); margin: 0; font-size: 0.9rem;">{{ post.created_at|timesince }} ago</p>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+            <p style="color: var(--muted); line-height: 1.6;">{{ post.content }}</p>
+            
+            {% if post.image %}
+            <img src="{{ post.image.url }}" alt="Post image" style="width: 100%; border-radius: 8px; margin-top: 1rem;">
+            {% endif %}
+        </div>
+        
+        <div class="post-actions">
+            <button class="action-btn" onclick="toggleReaction({{ post.id }})">
+                👍 {{ post.total_reactions }}
+            </button>
+            <button class="action-btn" onclick="showComments({{ post.id }})">
+                💬 {{ post.total_comments }}
+            </button>
+            <button class="action-btn" onclick="followUser({{ post.author.id }})">
+                🤝 Follow
+            </button>
+        </div>
+    </div>
+    {% empty %}
+    <div class="card" style="text-align: center; padding: 3rem;">
+        <h3 style="color: var(--accent-2); margin-bottom: 1rem;">No posts to discover</h3>
+        <p style="color: var(--muted);">Check back later for new content!</p>
+    </div>
+    {% endfor %}
+    
+    <!-- Pagination -->
+    {% if posts.has_other_pages %}
+    <div style="text-align: center; margin-top: 2rem;">
+        {% if posts.has_previous %}
+            <a href="?page={{ posts.previous_page_number }}" class="btn btn-secondary">← Previous</a>
+        {% endif %}
+        
+        <span style="margin: 0 1rem; color: var(--muted);">
+            Page {{ posts.number }} of {{ posts.paginator.num_pages }}
+        </span>
+        
+        {% if posts.has_next %}
+            <a href="?page={{ posts.next_page_number }}" class="btn btn-secondary">Next →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleReaction(postId) {
+    fetch(`/community/post/${postId}/react/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'reaction_type=like'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (window.Toast) {
+            Toast.show(data.action === 'added' ? 'Reaction added!' : 'Reaction removed!', 'success');
+        }
+        // Update button text
+        const btn = event.target;
+        const currentCount = parseInt(btn.textContent.match(/\d+/)[0]);
+        const newCount = data.action === 'added' ? currentCount + 1 : currentCount - 1;
+        btn.innerHTML = `👍 ${newCount}`;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (window.Toast) {
+            Toast.show('Failed to react to post', 'error');
+        }
+    });
+}
+
+function followUser(userId) {
+    fetch(`/community/user/${userId}/follow/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const btn = event.target;
+        if (data.action === 'followed') {
+            btn.innerHTML = '✅ Following';
+            btn.style.background = 'rgba(0,255,136,0.2)';
+            btn.style.color = 'var(--accent-2)';
+        } else {
+            btn.innerHTML = '🤝 Follow';
+            btn.style.background = 'transparent';
+            btn.style.color = 'var(--muted)';
+        }
+        
+        if (window.Toast) {
+            Toast.show(data.action === 'followed' ? 'Now following user!' : 'Unfollowed user', 'success');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (window.Toast) {
+            Toast.show('Failed to follow user', 'error');
+        }
+    });
+}
+
+function showComments(postId) {
+    if (window.Toast) {
+        Toast.show('Comments feature coming soon!', 'info');
+    }
+}
+</script>
+{% endblock %}

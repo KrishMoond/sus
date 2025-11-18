@@ -3,10 +3,10 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils import timezone
 from .models import Report
-from django_ratelimit.decorators import ratelimit
+# from django_ratelimit.decorators import ratelimit
 
 @login_required
-@ratelimit(key='user', rate='5/h', method='POST')
+# @ratelimit(key='user', rate='5/h', method='POST')
 def create_report(request):
     if request.method == 'POST':
         category = request.POST.get('category')
@@ -78,7 +78,7 @@ def resolve_report(request, pk):
     return redirect(f'/reports/admin/?status={redirect_status}')
 
 @login_required
-@ratelimit(key='user', rate='3/h', method='POST')
+# @ratelimit(key='user', rate='3/h', method='POST')
 def submit_feedback(request):
     from .models import Feedback
     if request.method == 'POST':

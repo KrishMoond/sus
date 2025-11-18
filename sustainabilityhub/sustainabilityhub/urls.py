@@ -23,7 +23,7 @@ urlpatterns = [
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
     path('', home_view, name='home'),
     path('login/', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
     path('register/', views.register, name='register'),
     path('accounts/', include('accounts.urls')),
     path('profiles/', include('profiles.urls')),
@@ -35,8 +35,11 @@ urlpatterns = [
     path('notifications/', include('notifications.urls')),
     path('moderation/', include('moderation.urls')),
     path('reports/', include('rms.urls')),
+    path('community/', include('community.urls')),
     path('search/', global_search, name='global_search'),
-    path('ckeditor/', include('ckeditor_uploader.urls')),
+    
+    # API endpoints
+    path('api/auth/', include('accounts.api_urls')),
 ]
 
 

@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-w4y@&2=q%1=hrhrk=m7rrqf6o6gtl(2#9yi1sr0^je_ww%nhj#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver']
 
 
 # Application definition
@@ -37,8 +37,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'ckeditor',
-    'ckeditor_uploader',
     'accounts',
     'projects',
     'events',
@@ -49,6 +47,9 @@ INSTALLED_APPS = [
     'forums',
     'messaging',
     'rms',
+    'community',
+    'activity_logs',
+
 ]
 
 MIDDLEWARE = [
@@ -169,21 +170,21 @@ EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
 DEFAULT_FROM_EMAIL = 'noreply@ecoconnect.com'
 
-# CKEditor Configuration
-CKEDITOR_UPLOAD_PATH = 'uploads/'
-CKEDITOR_CONFIGS = {
-    'default': {
-        'toolbar': 'Custom',
-        'toolbar_Custom': [
-            ['Bold', 'Italic', 'Underline'],
-            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'],
-            ['Link', 'Unlink'],
-            ['RemoveFormat', 'Source']
-        ],
-        'height': 200,
-        'width': '100%',
-    },
-}
+# CKEditor Configuration (Disabled)
+# CKEDITOR_UPLOAD_PATH = 'uploads/'
+# CKEDITOR_CONFIGS = {
+#     'default': {
+#         'toolbar': 'Custom',
+#         'toolbar_Custom': [
+#             ['Bold', 'Italic', 'Underline'],
+#             ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'],
+#             ['Link', 'Unlink'],
+#             ['RemoveFormat', 'Source']
+#         ],
+#         'height': 200,
+#         'width': '100%',
+#     },
+# }
 
 # File Upload Settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
